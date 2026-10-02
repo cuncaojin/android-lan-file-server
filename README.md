@@ -79,7 +79,10 @@
 ### 2.0 获取代码与环境要求
 
 ```bash
-git clone https://gitee.com/<你的Gitee用户名>/android-lan-file-server.git
+# Gitee
+git clone https://gitee.com/cuncaojin/android-lan-file-server.git
+# 或 GitHub
+git clone https://github.com/cuncaojin/android-lan-file-server.git
 cd android-lan-file-server
 ```
 
