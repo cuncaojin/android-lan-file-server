@@ -1,0 +1,7 @@
+# 修改记录（完整路径，按时间追加）
+2026-10-02
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/static/preview.js
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/static/app.js
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/static/preview.css
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/README.md
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/README.en.md

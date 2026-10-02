@@ -352,10 +352,188 @@
     }
   }
 
+  // ---- 同目录可预览文件：左右滑动切换（到头即止，不循环） ----
+  function encodePath(p) {
+    return String(p || "")
+      .split("/")
+      .filter(Boolean)
+      .map(encodeURIComponent)
+      .join("/");
+  }
+
+  function bindSwipe() {
+    if (!meta.path) return;
+    var parent = meta.parent || "";
+    var seq = [];
+    var idx = -1;
+    var sx = 0;
+    var sy = 0;
+    var active = false;
+    var hScroll0 = null;
+
+    // 触点落在交互控件或媒体控制区时，不当作切换手势
+    function skipStart(t, y) {
+      if (!t || !t.closest) return true;
+      if (t.closest("a, button, input, textarea, select, audio")) return true;
+      if (t.closest(".actions, .text-toolbar, .md-toolbar")) return true;
+      if (t.tagName === "VIDEO") {
+        var r = t.getBoundingClientRect();
+        if (y > r.bottom - 64) return true; // 底部控制条（进度条拖动）区域
+      }
+      return false;
+    }
+
+    // 记录横向可滚动祖先的起始滚动位置
+    function hScrollMark(t) {
+      hScroll0 = [];
+      for (var n = t; n && n !== document.body; n = n.parentElement) {
+        if (n.scrollWidth <= n.clientWidth + 1) continue;
+        var ox = window.getComputedStyle(n).overflowX;
+        if (ox === "auto" || ox === "scroll") hScroll0.push([n, n.scrollLeft]);
+      }
+    }
+
+    // 本次手势被内容横滑消费（位置发生位移）则让位，不切换文件
+    function hScrollConsumed() {
+      if (!hScroll0) return false;
+      for (var i = 0; i < hScroll0.length; i++) {
+        if (Math.abs(hScroll0[i][0].scrollLeft - hScroll0[i][1]) > 1) return true;
+      }
+      return false;
+    }
+
+    function attach(files) {
+      seq = files;
+      idx = -1;
+      for (var i = 0; i < seq.length; i++) {
+        if (seq[i].path === meta.path) {
+          idx = i;
+          break;
+        }
+      }
+      if (idx < 0 || seq.length < 2) return; // 找不到自己或无可切换项
+
+      document.addEventListener(
+        "touchstart",
+        function (e) {
+          if (!e.touches || e.touches.length !== 1) {
+            active = false;
+            return;
+          }
+          if (skipStart(e.target, e.touches[0].clientY)) {
+            active = false;
+            return;
+          }
+          active = true;
+          sx = e.touches[0].clientX;
+          sy = e.touches[0].clientY;
+          hScrollMark(e.target);
+        },
+        { passive: true }
+      );
+      document.addEventListener(
+        "touchcancel",
+        function () {
+          active = false;
+        },
+        { passive: true }
+      );
+      document.addEventListener(
+        "touchend",
+        function (e) {
+          if (!active || !e.changedTouches || !e.changedTouches.length) return;
+          active = false;
+          var dx = e.changedTouches[0].clientX - sx;
+          var dy = e.changedTouches[0].clientY - sy;
+          // 横向主导 + 足够位移，避免与竖向滚动手势打架
+          if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+          if (hScrollConsumed()) return; // 手势在滚动内容上：让位给横向滚动
+          try {
+            var sel = window.getSelection();
+            if (sel && !sel.isCollapsed && String(sel).length) return; // 文本选择中
+          } catch (err) {}
+          var next = idx + (dx < 0 ? 1 : -1); // 左滑下一个，右滑上一个
+          if (next < 0 || next >= seq.length) return; // 不循环：到头停住
+          var f = seq[next];
+          location.href =
+            "/preview/" +
+            encodePath(f.path) +
+            (f.kind ? "?kind=" + encodeURIComponent(f.kind) : "");
+        },
+        { passive: true }
+      );
+
+      // 手势可用时给一次性提示（每会话只提示一次，不常驻打扰）
+      try {
+        if (!sessionStorage.getItem("alfs-swipe-hinted")) {
+          var tip = document.createElement("div");
+          tip.className = "swipe-toast";
+          tip.textContent = "左右滑动可切换上一个/下一个文件";
+          document.body.appendChild(tip);
+          requestAnimationFrame(function () {
+            tip.classList.add("show");
+          });
+          setTimeout(function () {
+            tip.classList.remove("show");
+            setTimeout(function () {
+              tip.remove();
+            }, 500);
+          }, 2600);
+          sessionStorage.setItem("alfs-swipe-hinted", "1");
+        }
+      } catch (e) {}
+    }
+
+    function loadSiblings(hidden) {
+      var url =
+        "/api/ls?path=" +
+        encodeURIComponent(parent) +
+        (hidden ? "&hidden=1" : "");
+      fetch(url, { credentials: "same-origin" })
+        .then(function (res) {
+          return res.ok ? res.json() : null;
+        })
+        .then(function (data) {
+          if (!data) return;
+          var files = (data.files || []).filter(function (f) {
+            return f.previewable;
+          });
+          files.sort(function (a, b) {
+            return String(a.name).localeCompare(String(b.name), "zh");
+          });
+          var found = files.some(function (f) {
+            return f.path === meta.path;
+          });
+          if (!found && !hidden) {
+            var base = meta.path.split("/").pop() || "";
+            if (base.charAt(0) === ".") {
+              loadSiblings(true); // 当前是隐藏文件：带 hidden=1 重拉
+              return;
+            }
+          }
+          attach(files);
+        })
+        .catch(function () {
+          /* 接口失败时静默：滑动不可用，不影响预览 */
+        });
+    }
+
+    loadSiblings(false);
+  }
+
+  // 退出预览时记住最后看过的文件，供列表页恢复焦点
+  window.addEventListener("pagehide", function () {
+    if (!meta.path) return;
+    try {
+      sessionStorage.setItem("alfs-preview-focus", meta.path);
+    } catch (e) {}
+  });
+
   improveBackLink();
   bindMarkdown();
   bindText();
   bindPdfJs();
   bindCopyPath();
   bindMediaErrors();
+  bindSwipe();
 })();

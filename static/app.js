@@ -314,6 +314,34 @@
     els.upBtn.disabled = !data.path;
   }
 
+  // 预览页退出时写入 sessionStorage；此处消费一次，把焦点还给刚看过的文件
+  function focusLastPreviewed() {
+    var want = null;
+    try {
+      want = sessionStorage.getItem("alfs-preview-focus");
+      if (want) sessionStorage.removeItem("alfs-preview-focus");
+    } catch (e) {
+      return;
+    }
+    if (!want) return;
+    // 逐个比对属性，避免文件名含引号/反斜杠时 CSS 选择器报错
+    var links = els.fileBody.querySelectorAll("a[data-path]");
+    var a = null;
+    for (var i = 0; i < links.length; i++) {
+      if (links[i].getAttribute("data-path") === want) {
+        a = links[i];
+        break;
+      }
+    }
+    if (!a) return;
+    try {
+      a.focus({ preventScroll: true });
+    } catch (e) {
+      a.focus();
+    }
+    a.scrollIntoView({ block: "center" });
+  }
+
   async function load(path, opts) {
     opts = opts || {};
     state.path = path || "";
@@ -327,6 +355,7 @@
       renderTree(data);
       renderHeader(data);
       renderTable(data);
+      focusLastPreviewed();
       if (opts.focusSearch) {
         els.searchInput.value = "";
         state.query = "";
@@ -414,6 +443,11 @@
   window.addEventListener("popstate", function (e) {
     var path = (e.state && e.state.path) || "";
     load(path, { push: false });
+  });
+
+  // 浏览器返回若命中 bfcache（不重新加载），列表原样恢复时补一次焦点
+  window.addEventListener("pageshow", function (e) {
+    if (e.persisted) focusLastPreviewed();
   });
 
   load(state.path, { push: false, focusSearch: true });
