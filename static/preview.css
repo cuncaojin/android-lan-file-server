@@ -51,7 +51,6 @@
 }
 .ppt-shell .hint,
 .ppt-text .hint,
-.text-toolbar .hint,
 .media-stage .hint {
   padding: 10px 12px;
   background: var(--bg-soft);
@@ -88,12 +87,19 @@
 .md-toolbar,
 .text-toolbar {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 8px;
   margin-bottom: 10px;
   border-bottom: 0;
+  min-width: 0;
+}
+/* 工具栏提示（仅截断时出现）：纯文字、不换行 */
+.text-toolbar .hint {
+  flex: none;
+  white-space: nowrap;
+  font-size: 12px;
 }
 
 .markdown-body,
@@ -123,14 +129,26 @@
   word-break: break-word;
 }
 
-/* 文本工具栏按钮组 */
+/* 文本工具栏按钮组：单行不换行，放不下时横向滚动（隐藏滚动条） */
 .text-ops {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   align-items: center;
-  justify-content: flex-end;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+.text-ops::-webkit-scrollbar { display: none; }
+
+/* 工具栏按钮紧凑化，减少纵向浪费 */
+.text-toolbar .btn,
+.md-toolbar .btn {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
 .btn.toggle.on {
   border-color: var(--accent);
   color: var(--accent);
@@ -269,3 +287,29 @@
   transition: opacity 0.4s;
 }
 .swipe-toast.show { opacity: 1; }
+
+/* 移动端顶栏：两行布局，彻底避免按钮与标题重叠、"返回"竖排 */
+@media (max-width: 640px) {
+  .preview-page .topbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .preview-page .topbar .brand { width: 100%; }
+  /* 已占满整行，解除 vw 上限，让长文件名多显示一些 */
+  .preview-page .topbar .title,
+  .preview-page .topbar .subtitle { max-width: none; }
+  .preview-page .topbar .actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .preview-page .topbar .actions::-webkit-scrollbar { display: none; }
+  .preview-page .topbar .actions .btn {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}

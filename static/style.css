@@ -61,6 +61,8 @@ a:hover { text-decoration: underline; }
   gap: 12px;
   min-width: 0;
 }
+/* 内层必须可收缩，否则标题/副标题溢出会压住右侧按钮 */
+.brand > div { min-width: 0; }
 .brand.compact { gap: 10px; }
 .logo { font-size: 28px; line-height: 1; }
 .title {
@@ -121,6 +123,8 @@ a:hover { text-decoration: underline; }
   color: var(--text);
   text-decoration: none;
   padding-right: 4px;
+  white-space: nowrap;
+  flex: none;
 }
 
 .toggle {

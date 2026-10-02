@@ -11,7 +11,7 @@
 <body class="preview-page">
   <header class="topbar sticky">
     <div class="brand compact">
-      <a class="back" href="/" id="backHome">首页</a>
+      <a class="back" href="/" id="backHome">返回</a>
       <div>
         <div class="title truncate" title="{{ meta.name }}">{{ meta.name }}</div>
         <div class="subtitle">
@@ -21,11 +21,6 @@
       </div>
     </div>
     <div class="actions wrap">
-      {% if meta.parent is not none and meta.parent != "" %}
-        <a class="btn" href="/?path={{ meta.parent }}">返回目录</a>
-      {% else %}
-        <a class="btn" href="/">返回目录</a>
-      {% endif %}
       <button type="button" class="btn" id="copyPathBtn" title="复制服务器上的完整文件路径">复制路径</button>
       <a class="btn ghost" href="{{ meta.download_url }}" download>下载</a>
     </div>
@@ -91,14 +86,14 @@
 
     {% elif meta.kind == "text" %}
       <div class="text-toolbar">
-        <span class="hint">纯文本预览{% if meta.content and meta.content|length >= 2000000 %}（已截断）{% endif %}</span>
+        {% if meta.content and meta.content|length >= 2000000 %}<span class="hint">已截断，仅显示前 2MB</span>{% endif %}
         <div class="text-ops">
           <button type="button" class="btn toggle" id="btnFormat" hidden>格式化</button>
+          <button type="button" class="btn toggle" id="btnWrap" title="长行是否自动换行">换行</button>
+          <button type="button" class="btn toggle" id="btnLines" title="显示/隐藏行号">行号</button>
           <button type="button" class="btn" id="btnZoomOut" title="缩小字号">A−</button>
           <button type="button" class="btn ghost" id="btnZoomLabel" title="点击恢复默认字号">13px</button>
           <button type="button" class="btn" id="btnZoomIn" title="放大字号">A+</button>
-          <button type="button" class="btn toggle" id="btnWrap" title="长行是否自动换行">换行</button>
-          <button type="button" class="btn toggle" id="btnLines" title="显示/隐藏行号">行号</button>
           <a class="btn ghost" href="{{ meta.raw_url }}">原始文件</a>
         </div>
       </div>
