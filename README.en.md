@@ -70,7 +70,7 @@ A **LAN file server** running on an **Android phone (Termux Ubuntu subsystem)**:
 
 Every file type also offers **Preview** / **Download** / **Raw link**.
 
-Previewable files in the same directory can be switched by **swiping left/right** on the preview page: swipe left for the next file, right for the previous one, stopping at the first/last file (**no wrap-around**); gestures used for horizontal text scrolling, video seeking, or text selection are unaffected.
+Previewable files in the same directory can be switched by **swiping left/right** on the preview page: swipe left for the next file, right for the previous one, stopping at the first/last file (**no wrap-around**; swiping further shows an "already at the first/last file" toast); gestures used for horizontal text scrolling, video seeking, or text selection are unaffected.
 
 ### 1.3 Service characteristics
 - Listens on `0.0.0.0` by default, **reachable from both the phone and the LAN**; changing it back to `127.0.0.1` restricts access to the phone itself

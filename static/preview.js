@@ -361,6 +361,30 @@
       .join("/");
   }
 
+  // ---- 底部轻提示：首次滑动提示与到头（第一个/最后一个）提示共用 ----
+  var toastEl = null;
+  var toastTimer = 0;
+  function showToast(text, duration) {
+    try {
+      if (!toastEl || !toastEl.isConnected) {
+        toastEl = document.createElement("div");
+        toastEl.className = "swipe-toast";
+        document.body.appendChild(toastEl);
+      }
+      toastEl.textContent = text;
+      toastEl.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () {
+        if (toastEl) toastEl.classList.remove("show");
+        setTimeout(function () {
+          if (!toastEl) return;
+          toastEl.remove();
+          toastEl = null;
+        }, 500);
+      }, duration || 1600);
+    } catch (e) {}
+  }
+
   function bindSwipe() {
     if (!meta.path) return;
     var parent = meta.parent || "";
@@ -453,7 +477,14 @@
             if (sel && !sel.isCollapsed && String(sel).length) return; // 文本选择中
           } catch (err) {}
           var next = idx + (dx < 0 ? 1 : -1); // 左滑下一个，右滑上一个
-          if (next < 0 || next >= seq.length) return; // 不循环：到头停住
+          if (next < 0) {
+            showToast("已经是第一个文件", 1500); // 不循环：到头停住并提示
+            return;
+          }
+          if (next >= seq.length) {
+            showToast("已经是最后一个文件", 1500);
+            return;
+          }
           var f = seq[next];
           location.href =
             "/preview/" +
@@ -466,19 +497,7 @@
       // 手势可用时给一次性提示（每会话只提示一次，不常驻打扰）
       try {
         if (!sessionStorage.getItem("alfs-swipe-hinted")) {
-          var tip = document.createElement("div");
-          tip.className = "swipe-toast";
-          tip.textContent = "左右滑动可切换上一个/下一个文件";
-          document.body.appendChild(tip);
-          requestAnimationFrame(function () {
-            tip.classList.add("show");
-          });
-          setTimeout(function () {
-            tip.classList.remove("show");
-            setTimeout(function () {
-              tip.remove();
-            }, 500);
-          }, 2600);
+          showToast("左右滑动可切换上一个/下一个文件", 2600);
           sessionStorage.setItem("alfs-swipe-hinted", "1");
         }
       } catch (e) {}
