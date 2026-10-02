@@ -8,9 +8,9 @@
 # 用法:
 #   bash deploy.sh
 #   bash deploy.sh /sdcard
-#   bash deploy.sh /sdcard/yourname/video
+#   bash deploy.sh /sdcard/DCIM/video
 #   ANDROID_LAN_ROOT=/sdcard/Download bash deploy.sh
-#   bash deploy.sh --root /sdcard/yourname --port 8081
+#   bash deploy.sh --root /sdcard/Download --port 8081
 #
 # 目录访问失败时：直接报错退出，不会静默成功。
 # =============================================================================
@@ -39,7 +39,7 @@ android-lan-file-server 部署脚本
 
 用法:
   bash deploy.sh
-  bash deploy.sh /sdcard/yourname/work/gitee/share
+  bash deploy.sh /sdcard/Download
   bash deploy.sh --root /sdcard/Download
   bash deploy.sh --root /sdcard --port 9523
   bash deploy.sh --allow-outside
@@ -53,10 +53,10 @@ android-lan-file-server 部署脚本
 
 示例:
   # 部署到指定目录（仅允许该目录及子目录）
-  bash deploy.sh --root /sdcard/yourname/work/gitee/share
+  bash deploy.sh --root /sdcard/Download
 
   # 允许访问根目录以外
-  bash deploy.sh --root /sdcard/yourname/work/gitee/share --allow-outside
+  bash deploy.sh --root /sdcard/Download --allow-outside
 USAGE
 }
 
@@ -263,7 +263,7 @@ try_fallback_bind_for_default_sdcard() {
   [[ -r /sdcard ]] && return 0
   log "尝试常见存储绑定源…"
   local src=""
-  for c in /storage/emulated/0 /mnt/sdcard /sdcard/yourname; do
+  for c in /storage/emulated/0 /mnt/sdcard /sdcard; do
     if [[ -d "$c" && -r "$c" ]]; then
       src="$c"
       break
@@ -300,6 +300,7 @@ install_deps() {
       ca-certificates \
       curl \
       file \
+      qrencode \
       rsync || true
   else
     log "核心依赖已就绪，跳过 apt"
@@ -536,9 +537,9 @@ EOF
    查看日志 : tail -f $ANDROID_LAN_HOME/logs/android-lan-file-server.log
    换目录启动（仅限该目录及子目录）:
      bash $ANDROID_LAN_HOME/stop.sh
-     bash $ANDROID_LAN_HOME/start.sh --root /sdcard/yourname/work/gitee/share
+     bash $ANDROID_LAN_HOME/start.sh --root /sdcard/Download
    允许访问其他路径:
-     bash $ANDROID_LAN_HOME/start.sh --root /sdcard/yourname/work/gitee/share --allow-outside
+     bash $ANDROID_LAN_HOME/start.sh --root /sdcard/Download --allow-outside
    修改默认目录/开关后重启:
      vi $ANDROID_LAN_HOME/android-lan-file-server.conf
      bash $ANDROID_LAN_HOME/stop.sh && bash $ANDROID_LAN_HOME/start.sh
@@ -549,6 +550,15 @@ EOF
    PPT/PPTX：优先 LibreOffice 转 PDF；否则提取文本预览
 ============================================================
 EOF
+
+  # 局域网二维码：对方连同一 Wi-Fi 扫码直接打开
+  local lan_ip=""
+  lan_ip="$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | grep -v '^127\.' | head -1 || true)"
+  if [[ -n "$lan_ip" ]] && command -v qrencode >/dev/null 2>&1; then
+    echo ""
+    echo "扫码访问（局域网）:"
+    qrencode -t ANSIUTF8 "http://${lan_ip}:${ANDROID_LAN_PORT}/" | sed 's/^/  /'
+  fi
 }
 
 # -----------------------------------------------------------------------------
@@ -561,7 +571,7 @@ main() {
   if [[ ! -r "$ANDROID_LAN_ROOT" ]]; then
     die "目录仍不可读：$ANDROID_LAN_ROOT
 请提供你确保存在且可访问的目录，例如:
-  bash deploy.sh --root /sdcard/yourname/work/gitee/share
+  bash deploy.sh --root /sdcard/Download
   bash deploy.sh --root /sdcard/Download"
   fi
   install_deps

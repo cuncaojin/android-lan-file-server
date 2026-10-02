@@ -182,6 +182,46 @@
     render(current);
   }
 
+  // HTTP 局域网地址非安全上下文，navigator.clipboard 不可用，回退 execCommand
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try {
+        ok = document.execCommand("copy");
+      } catch (e) {}
+      document.body.removeChild(ta);
+      ok ? resolve() : reject(new Error("copy failed"));
+    });
+  }
+
+  function bindCopyPath() {
+    var btn = document.getElementById("copyPathBtn");
+    if (!btn || !meta.full_path) return;
+    btn.addEventListener("click", function () {
+      copyText(meta.full_path).then(
+        function () {
+          var old = btn.textContent;
+          btn.textContent = "已复制";
+          setTimeout(function () {
+            btn.textContent = old;
+          }, 1500);
+        },
+        function () {
+          window.prompt("自动复制失败，长按手动复制：", meta.full_path);
+        }
+      );
+    });
+  }
+
   function bindMediaErrors() {
     var audio = document.getElementById("audioEl");
     var video = document.getElementById("videoEl");
@@ -310,5 +350,6 @@
   bindMarkdown();
   bindText();
   bindPdfJs();
+  bindCopyPath();
   bindMediaErrors();
 })();

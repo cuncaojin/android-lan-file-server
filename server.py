@@ -641,6 +641,7 @@ def preview(rel: str):
         "parent": parent_rel,
         "raw_url": f"/raw/{quote(raw_rel, safe='/@')}",
         "download_url": f"/raw/{quote(raw_rel, safe='/@')}?download=1",
+        "full_path": str(path),
         "soffice": bool(SOFFICE),
         "allow_outside": ALLOW_OUTSIDE_ROOT,
     }
@@ -822,7 +823,7 @@ def main() -> None:
         raise SystemExit(
             f"[android-lan-file-server] 错误: 根目录不存在: {ANDROID_LAN_ROOT}\n"
             f"请指定一个你确认存在且可访问的目录，例如:\n"
-            f"  python3 server.py --root /sdcard/yourname/work/gitee/share"
+            f"  python3 server.py --root /sdcard/Download"
         )
     if not ANDROID_LAN_ROOT.is_dir():
         raise SystemExit(

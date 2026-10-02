@@ -26,6 +26,27 @@
     toast: document.getElementById("toast"),
   };
 
+  // HTTP 局域网非安全上下文无 clipboard API，回退 execCommand
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try {
+        ok = document.execCommand("copy");
+      } catch (e) {}
+      document.body.removeChild(ta);
+      ok ? resolve() : reject(new Error("copy failed"));
+    });
+  }
+
   function toast(msg) {
     if (!els.toast) return;
     els.toast.hidden = false;
@@ -176,6 +197,7 @@
         "</a>" +
         "</div>";
 
+      var full = (cfg.rootPath || "").replace(/\/+$/, "") + "/" + item.path;
       var ops = [];
       if (item.is_dir) {
         ops.push(
@@ -202,6 +224,11 @@
             '" target="_blank" rel="noopener">原始</a>'
         );
       }
+      ops.push(
+        '<button type="button" class="btn ghost" data-copy="' +
+          escapeHtml(full) +
+          '" title="复制服务器完整路径，可在终端直接使用" aria-label="复制完整路径">📋</button>'
+      );
 
       rows.push(
         "<tr>" +
@@ -323,6 +350,19 @@
 
   // Events
   els.fileBody.addEventListener("click", function (e) {
+    var cp = e.target.closest("[data-copy]");
+    if (cp) {
+      e.preventDefault();
+      copyText(cp.getAttribute("data-copy")).then(
+        function () {
+          toast("已复制完整路径");
+        },
+        function () {
+          toast("复制失败，请手动选择复制");
+        }
+      );
+      return;
+    }
     var a = e.target.closest("a[data-path]");
     if (!a) return;
     // allow browser default for download / target=_blank

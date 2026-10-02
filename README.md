@@ -41,6 +41,7 @@
 - 中文路径、空格路径
 - 文件名**换行完整显示**（不截断省略号）；可预览与否由右侧按钮表达（可预览才有「预览」按钮）
 - 移动端卡片式两行：名称占整行，`大小 · 时间` 与操作按钮排第二行
+- 每行与预览页均支持**一键复制服务器完整路径**，方便粘贴到终端直接使用
 - 可选显示隐藏文件（`.` 开头）
 - 当前目录名称筛选
 - 超大目录会截断列表（默认最多约 5000 条）
@@ -65,6 +66,7 @@
 ### 1.3 服务特性
 - 默认监听 `0.0.0.0`，**本机与局域网都可访问**；若改回 `127.0.0.1` 则仅本机
 - 启动时同时打印：**回环地址 + 本机局域网 IPv4 地址**
+- 启动横幅自动显示**局域网访问二维码**：对方连同一 Wi-Fi 扫码即开，无需手输地址（依赖 `qrencode`，`deploy.sh` 自动安装）
 - 路径穿越防护（`..`、非法路径会被拒绝）
 - 媒体文件 Range 请求（视频/音频拖动进度）
 - 健康检查 `/healthz`
@@ -94,13 +96,14 @@ cd android-lan-file-server
 | Python 3 + Flask | 必需 | `deploy.sh` 自动安装 |
 | LibreOffice（impress/writer/calc） | 可选 | 没有它则 PPT/Word/Excel 仅能下载，无法在线预览；`deploy.sh` 自动补装 |
 | 中文字体 `fonts-noto-cjk` | 可选 | 保证转换后的中文文档观感；`deploy.sh` 自动补装 |
+| `qrencode` | 可选 | 启动横幅显示局域网扫码二维码；`deploy.sh` 自动安装 |
 
 装好后继续往下：本机开发直接 `bash start.sh`，完整部署见 2.1。
 
 ### 2.1 一键部署（默认 `/sdcard`）
 
 ```bash
-cd /sdcard/yourname/work/gitee/tmp/android-lan-file-server
+cd android-lan-file-server
 bash deploy.sh
 ```
 
@@ -108,15 +111,15 @@ bash deploy.sh
 
 ```bash
 # 位置参数
-bash deploy.sh /sdcard/yourname/work/gitee/share
+bash deploy.sh /sdcard/Download
 bash deploy.sh /sdcard/Download
 
 # 显式参数
-bash deploy.sh --root /sdcard/yourname/work/gitee/share
+bash deploy.sh --root /sdcard/Download
 bash deploy.sh --root /sdcard --port 9523
 
 # 允许访问根目录以外路径（默认 no）
-bash deploy.sh --root /sdcard/yourname/work/gitee/share --allow-outside
+bash deploy.sh --root /sdcard/Download --allow-outside
 
 # 环境变量
 ANDROID_LAN_ROOT=/sdcard/Download bash deploy.sh
@@ -150,10 +153,10 @@ ANDROID_LAN_ROOT=/sdcard/Download bash deploy.sh
 
 ```bash
 # 临时指定目录（例：share）
-bash /opt/android-lan-file-server/start.sh --root /sdcard/yourname/work/gitee/share
+bash /opt/android-lan-file-server/start.sh --root /sdcard/Download
 
 # 同时允许访问根目录以外
-bash /opt/android-lan-file-server/start.sh --root /sdcard/yourname/work/gitee/share --allow-outside
+bash /opt/android-lan-file-server/start.sh --root /sdcard/Download --allow-outside
 ```
 
 手机本机打开：
@@ -175,7 +178,7 @@ http://<本机IP>:9523/
 编辑独立配置文件 `/opt/android-lan-file-server/android-lan-file-server.conf`：
 
 ```bash
-DEFAULT_ROOT=/sdcard/yourname/work/gitee/share
+DEFAULT_ROOT=/sdcard/Download
 ALLOW_OUTSIDE_ROOT=no
 ANDROID_LAN_HOST=0.0.0.0
 ANDROID_LAN_PORT=9523
@@ -258,7 +261,7 @@ android-lan-file-server/
 
 ```bash
 # 默认浏览根目录
-DEFAULT_ROOT=/sdcard/yourname/work/gitee/share
+DEFAULT_ROOT=/sdcard/Download
 
 # 是否允许访问 DEFAULT_ROOT 以外的路径/文件
 #   no  = 默认，严格限制在 DEFAULT_ROOT 及其子目录内
@@ -319,7 +322,7 @@ DEFAULT_ROOT=/sdcard/你的目录/share
 ```bash
 cd /opt/android-lan-file-server
 python3 server.py \
-  --root /sdcard/yourname/work/gitee/share \
+  --root /sdcard/Download \
   --host 127.0.0.1 \
   --port 9523 \
   --deny-outside
@@ -340,8 +343,8 @@ bash /opt/android-lan-file-server/stop.sh
 bash /opt/android-lan-file-server/start.sh --root /sdcard/Download --allow-outside
 
 # 方法 C：重新部署写入配置
-bash /sdcard/yourname/work/gitee/tmp/android-lan-file-server/deploy.sh \
-  --root /sdcard/yourname/work/gitee/share --allow-outside
+bash ./deploy.sh \
+  --root /sdcard/Download --allow-outside
 ```
 
 ---
@@ -351,13 +354,13 @@ bash /sdcard/yourname/work/gitee/tmp/android-lan-file-server/deploy.sh \
 ### 5.1 部署
 
 ```bash
-bash /sdcard/yourname/work/gitee/tmp/android-lan-file-server/deploy.sh --root /sdcard/yourname/work/gitee/share
+bash ./deploy.sh --root /sdcard/Download
 ```
 
 部署步骤：
 1. 检测 Ubuntu + `python3`
 2. **校验指定目录存在、是目录、可读、可列出**（失败即报错退出）
-3. 安装 Flask、python-pptx、LibreOffice 组件（impress/writer/calc）与中文字体 fonts-noto-cjk（可选）
+3. 安装 Flask、python-pptx、LibreOffice 组件（impress/writer/calc）、中文字体 fonts-noto-cjk 与 qrencode（均可选）
 4. 同步应用到 `/opt/android-lan-file-server`，写入 `android-lan-file-server.conf`
 5. 停掉旧进程，`start.sh` 启动
 6. 轮询 `/healthz`，成功则打印访问地址与停止命令
@@ -369,10 +372,10 @@ bash /sdcard/yourname/work/gitee/tmp/android-lan-file-server/deploy.sh --root /s
 bash /opt/android-lan-file-server/start.sh
 
 # 命令行指定目录（例：share）
-bash /opt/android-lan-file-server/start.sh --root /sdcard/yourname/work/gitee/share
+bash /opt/android-lan-file-server/start.sh --root /sdcard/Download
 
 # 指定目录 + 允许访问其他路径
-bash /opt/android-lan-file-server/start.sh --root /sdcard/yourname/work/gitee/share --allow-outside
+bash /opt/android-lan-file-server/start.sh --root /sdcard/Download --allow-outside
 ```
 
 启动会打印访问链接：
@@ -381,7 +384,7 @@ bash /opt/android-lan-file-server/start.sh --root /sdcard/yourname/work/gitee/sh
 ============================================================
  android-lan-file-server 启动中
 ------------------------------------------------------------
- 浏览根目录   : /sdcard/yourname/work/gitee/share
+ 浏览根目录   : /sdcard/Download
  越权访问     : no（默认，仅限根目录及其子目录）
  监听地址     : http://0.0.0.0:9523/  (bind=0.0.0.0)
 ------------------------------------------------------------
@@ -407,14 +410,14 @@ bash /opt/android-lan-file-server/start.sh --root /sdcard/yourname/work/gitee/sh
 
 ```bash
 bash /opt/android-lan-file-server/stop.sh
-bash /sdcard/yourname/work/gitee/tmp/android-lan-file-server/stop.sh
+bash ./stop.sh
 kill $(cat /tmp/android-lan-file-server.pid)
 ```
 
 ### 5.4 重启
 
 ```bash
-bash /opt/android-lan-file-server/stop.sh && bash /opt/android-lan-file-server/start.sh --root /sdcard/yourname/work/gitee/share
+bash /opt/android-lan-file-server/stop.sh && bash /opt/android-lan-file-server/start.sh --root /sdcard/Download
 ```
 
 ### 5.5 查看状态 / 日志
@@ -433,7 +436,7 @@ curl -s http://127.0.0.1:9523/healthz
 ```json
 {
   "ok": true,
-  "root": "/sdcard/yourname/work/gitee/share",
+  "root": "/sdcard/Download",
   "root_readable": true,
   "allow_outside_root": false,
   "conf": "/opt/android-lan-file-server/android-lan-file-server.conf",
@@ -734,7 +737,7 @@ sequenceDiagram
 - 确认服务器日志无 500
 - 用 Range 请求自检：
   ```bash
-  curl -I -H "Range: bytes=0-99" http://127.0.0.1:9523/raw/yourname/video/test-10s.mp4
+  curl -I -H "Range: bytes=0-99" http://127.0.0.1:9523/raw/DCIM/video/test-10s.mp4
   ```
   正常应出现 `206 Partial Content`
 
@@ -742,7 +745,7 @@ sequenceDiagram
 - 预览链接由前端按路径段做 `encodeURIComponent`
 - 可直接访问：
   ```text
-  http://127.0.0.1:9523/preview/yourname/video/test-10s.mp4
+  http://127.0.0.1:9523/preview/DCIM/video/test-10s.mp4
   ```
 
 ### Q6: 换了目录，浏览器还是旧目录？
@@ -770,13 +773,13 @@ rm -rf /tmp/android-lan-file-server-cache
 若目录中有测试文件：
 
 ```text
-http://127.0.0.1:9523/preview/yourname/video/test-10s.mp4
+http://127.0.0.1:9523/preview/DCIM/video/test-10s.mp4
 ```
 
 部署到该目录：
 
 ```bash
-bash /sdcard/yourname/work/gitee/tmp/android-lan-file-server/deploy.sh --root /sdcard/yourname/video
+bash ./deploy.sh --root /sdcard/DCIM/video
 ```
 
 ---

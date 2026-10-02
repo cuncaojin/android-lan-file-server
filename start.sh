@@ -4,7 +4,7 @@
 #
 # 1) 默认启动目录：配置文件 android-lan-file-server.conf 的 DEFAULT_ROOT
 # 2) 命令行指定目录：
-#      bash start.sh --root /sdcard/yourname/work/gitee/share
+#      bash start.sh --root /sdcard/Download
 # 3) 越权访问开关：
 #      配置文件 ALLOW_OUTSIDE_ROOT=no/yes
 #      命令行 --allow-outside / --deny-outside
@@ -119,14 +119,14 @@ android-lan-file-server 启动脚本
 
 用法:
   bash start.sh
-  bash start.sh --root /sdcard/yourname/work/gitee/share
+  bash start.sh --root /sdcard/Download
   bash start.sh --root /sdcard/Download --port 9523
   bash start.sh --allow-outside          # 允许访问根目录以外路径
   bash start.sh --deny-outside           # 强制仅限根目录及子目录
   bash start.sh --conf /opt/android-lan-file-server/android-lan-file-server.conf
 
 默认目录、端口与开关写在配置文件 android-lan-file-server.conf 中:
-  DEFAULT_ROOT=/sdcard/yourname/work/gitee/share
+  DEFAULT_ROOT=/sdcard/Download
   ALLOW_OUTSIDE_ROOT=no|yes
   ANDROID_LAN_PORT=9523
   ANDROID_LAN_DAEMON=no|yes   # yes=后台常驻，关终端后仍可访问
@@ -225,6 +225,10 @@ if [[ ${#lan_ips[@]} -gt 0 ]]; then
   for ip in "${lan_ips[@]}"; do
     echo "   ${C_CY}→ http://${ip}:${ANDROID_LAN_PORT}/${C_OFF}"
   done
+  if command -v qrencode >/dev/null 2>&1; then
+    echo " ${C_B}扫码访问（局域网，对方连同一 Wi-Fi 扫码即开）${C_OFF}:"
+    qrencode -t ANSIUTF8 "http://${lan_ips[0]}:${ANDROID_LAN_PORT}/" | sed 's/^/   /'
+  fi
   echo " 提示: 请保证 ANDROID_LAN_HOST=0.0.0.0，否则局域网无法连接。"
 else
   echo " ${C_B}访问链接（局域网）${C_OFF}:"
