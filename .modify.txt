@@ -5,3 +5,6 @@
 /sdcard/cuncaojin/work/gitee/android-lan-file-server/static/preview.css
 /sdcard/cuncaojin/work/gitee/android-lan-file-server/README.md
 /sdcard/cuncaojin/work/gitee/android-lan-file-server/README.en.md
+2026-10-02
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/AGENTS.md
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/.gitignore

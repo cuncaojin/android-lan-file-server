@@ -7,6 +7,7 @@ config.env
 
 # 本地工具状态
 .mimocode/
+.opencode/
 
 # 本地私有配置（含个人路径，勿入库）
 android-lan-file-server.local.conf
