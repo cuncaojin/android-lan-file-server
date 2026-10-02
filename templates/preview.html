@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>{{ meta.name }} · 预览</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="/static/preview.css" />
+</head>
+<body class="preview-page">
+  <header class="topbar sticky">
+    <div class="brand compact">
+      <a class="back" href="/" id="backHome">首页</a>
+      <div>
+        <div class="title truncate" title="{{ meta.name }}">{{ meta.name }}</div>
+        <div class="subtitle">
+          {{ meta.kind }} · {{ meta.size_h }}
+          {% if meta.mtime_h %} · {{ meta.mtime_h }}{% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="actions wrap">
+      {% if meta.parent is not none and meta.parent != "" %}
+        <a class="btn" href="/?path={{ meta.parent }}">返回目录</a>
+      {% else %}
+        <a class="btn" href="/">返回目录</a>
+      {% endif %}
+      <a class="btn ghost" href="{{ meta.download_url }}" download>下载</a>
+    </div>
+  </header>
+
+  <main class="preview-main" id="previewMain">
+    {% if meta.kind == "pdf" %}
+      <div class="pdf-shell">
+        <div class="pdfjs-shell" id="pdfjsShell" data-url="{{ meta.raw_url }}"></div>
+      </div>
+
+    {% elif meta.kind == "ppt" %}
+      {% if meta.ppt_mode == "pdf" and meta.pdf_url %}
+        <div class="ppt-shell">
+          <div class="hint">PPT 已转为 PDF 在线预览{% if meta.pdf_size_h %}（{{ meta.pdf_size_h }}）{% endif %}</div>
+          <div class="pdfjs-shell" id="pdfjsShell" data-url="{{ meta.pdf_url }}"></div>
+        </div>
+      {% elif meta.ppt_mode == "text" and meta.slides %}
+        <div class="ppt-text" id="pptText">
+          <div class="hint">未能转换为 PDF，已提取幻灯片文本预览。可下载原文件。</div>
+          {% for s in meta.slides %}
+            <section class="slide">
+              <div class="slide-idx">第 {{ s.index }} 页</div>
+              {% if s.title %}<h3>{{ s.title }}</h3>{% endif %}
+              <ul>
+                {% for b in s.bullets %}
+                  <li>{{ b }}</li>
+                {% endfor %}
+              </ul>
+            </section>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="fallback">
+          <p>无法在线解析该 PPT 文件。</p>
+          <p class="hint">系统未安装 LibreOffice，且无法提取文本。请下载后用其他应用打开。</p>
+          <a class="btn primary" href="{{ meta.download_url }}" download>下载原文件</a>
+        </div>
+      {% endif %}
+
+    {% elif meta.kind == "office" %}
+      {% if meta.office_mode == "pdf" and meta.pdf_url %}
+        <div class="ppt-shell">
+          <div class="hint">Word/Excel 文档已转为 PDF 在线预览{% if meta.pdf_size_h %}（{{ meta.pdf_size_h }}）{% endif %}</div>
+          <div class="pdfjs-shell" id="pdfjsShell" data-url="{{ meta.pdf_url }}"></div>
+        </div>
+      {% else %}
+        <div class="fallback">
+          <p>无法在线预览该文档。</p>
+          <p class="hint">系统未安装 LibreOffice 或转换失败。请下载后用其他应用打开。</p>
+          <a class="btn primary" href="{{ meta.download_url }}" download>下载原文件</a>
+        </div>
+      {% endif %}
+
+    {% elif meta.kind == "markdown" %}
+      <div class="md-toolbar">
+        <button type="button" class="btn" id="mdToggle">切换源码</button>
+        <a class="btn ghost" href="{{ meta.raw_url }}">原始文件</a>
+      </div>
+      <article class="markdown-body" id="mdBody"></article>
+      <pre class="md-source" id="mdSource" hidden></pre>
+      <script type="application/json" id="mdPayload">{{ meta.content|tojson }}</script>
+
+    {% elif meta.kind == "text" %}
+      <div class="text-toolbar">
+        <span class="hint">纯文本预览{% if meta.content and meta.content|length >= 2000000 %}（已截断）{% endif %}</span>
+        <div class="text-ops">
+          <button type="button" class="btn toggle" id="btnFormat" hidden>格式化</button>
+          <button type="button" class="btn" id="btnZoomOut" title="缩小字号">A−</button>
+          <button type="button" class="btn ghost" id="btnZoomLabel" title="点击恢复默认字号">13px</button>
+          <button type="button" class="btn" id="btnZoomIn" title="放大字号">A+</button>
+          <button type="button" class="btn toggle" id="btnWrap" title="长行是否自动换行">换行</button>
+          <button type="button" class="btn toggle" id="btnLines" title="显示/隐藏行号">行号</button>
+          <a class="btn ghost" href="{{ meta.raw_url }}">原始文件</a>
+        </div>
+      </div>
+      <pre class="text-view" id="textView"></pre>
+      <script type="application/json" id="textPayload">{{ meta.content|tojson }}</script>
+
+    {% elif meta.kind == "audio" %}
+      <div class="media-stage">
+        <audio id="audioEl" controls preload="metadata" src="{{ meta.raw_url }}"></audio>
+        <div class="hint">支持在线播放与拖动进度</div>
+      </div>
+
+    {% elif meta.kind == "video" %}
+      <div class="media-stage video">
+        <video id="videoEl" controls playsinline preload="metadata" src="{{ meta.raw_url }}"></video>
+        <div class="hint">支持在线播放；若缓冲较慢，说明文件较大或网络较慢</div>
+      </div>
+
+    {% elif meta.kind == "image" %}
+      <div class="image-stage">
+        <img id="imgEl" src="{{ meta.raw_url }}" alt="{{ meta.name }}" />
+      </div>
+
+    {% elif meta.kind == "epub" %}
+      <div class="fallback">
+        <p>EPUB 暂不支持内置完整渲染。</p>
+        <p class="hint">可下载后使用阅读器打开。</p>
+        <a class="btn primary" href="{{ meta.download_url }}" download>下载 EPUB</a>
+      </div>
+
+    {% else %}
+      <div class="fallback">
+        <p>该文件类型暂不支持在线预览。</p>
+        <p class="hint">{{ meta.mime }} · {{ meta.ext }}</p>
+        <a class="btn primary" href="{{ meta.download_url }}" download>下载文件</a>
+      </div>
+    {% endif %}
+  </main>
+
+  <script>
+    window.__PREVIEW_META__ = {{ meta|tojson }};
+  </script>
+  <script src="/static/md.js"></script>
+  <script src="/static/preview.js"></script>
+</body>
+</html>

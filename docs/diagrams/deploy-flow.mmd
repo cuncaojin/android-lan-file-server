@@ -1,0 +1,21 @@
+flowchart TD
+  S0[deploy.sh --root DIR] --> S1[Parse args]
+  S1 --> S2[Check Ubuntu + python3]
+  S2 --> S3{Dir exists}
+  S3 -->|No| S3E[Error: not found]
+  S3 -->|Yes| S4{Is directory}
+  S4 -->|No| S4E[Error: not a directory]
+  S4 -->|Yes| S5{Readable and listable}
+  S5 -->|No| S5E[Error: not accessible]
+  S5 -->|Yes| S6[Install deps]
+  S6 --> S7[Copy app to /opt/android-lan-file-server]
+  S7 --> S8[Write config.env]
+  S8 --> S9[Stop old process]
+  S9 --> S10[Start start.sh --root]
+  S10 --> S11[healthz poll]
+  S11 -->|Fail| S11E[Print log and die]
+  S11 -->|OK| S12[Print URL and stop commands]
+  T0[stop.sh] --> T1[Read pid file]
+  T1 --> T2[kill process]
+  T2 --> T3[port and name fallback]
+  T3 --> T4[Confirm port free]

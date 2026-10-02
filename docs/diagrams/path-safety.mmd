@@ -1,0 +1,18 @@
+flowchart TD
+  A[HTTP 请求 path 参数] --> B[raw/preview/api]
+  B --> C{是否为空或根?}
+  C -->|是| D[返回 ANDROID_LAN_ROOT]
+  C -->|否| E[替换反斜杠 去首尾斜杠]
+  E --> F{包含 NUL 或 ..?}
+  F -->|是| G[400 path traversal forbidden]
+  F -->|否| H[拼接 ANDROID_LAN_ROOT / parts]
+  H --> I[Path.resolve 规范化]
+  I --> J{是否仍在根目录下?}
+  J -->|否| K[403 outside sdcard root]
+  J -->|是| L[返回绝对路径继续处理]
+  L --> M[stat / is_dir / is_file]
+  M --> N{文件类型?}
+  N -->|目录| O[目录列表或跳转浏览页]
+  N -->|可预览文件| P[preview 路由]
+  N -->|其它| Q[下载/原始流]
+  N -->|无权限| R[403/500 明确报错]

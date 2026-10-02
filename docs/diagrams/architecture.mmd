@@ -1,0 +1,11 @@
+flowchart TB
+  Browser["Android Browser"] --> Flask["Flask app"]
+  Flask --> Safety["Path safety layer"]
+  Flask --> Routes["HTTP routes"]
+  Routes --> Preview["Preview engine"]
+  Routes --> UI["Templates and static"]
+  Preview --> PPT["LibreOffice / python-pptx"]
+  PPT --> Cache["Temp cache"]
+  Safety --> Bind["proot bind mount"]
+  Bind --> Storage["Android /sdcard"]
+  Flask --> Browser

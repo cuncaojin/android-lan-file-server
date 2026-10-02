@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>手机存储 · 文件浏览</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">📱</span>
+      <div>
+        <div class="title">手机存储</div>
+        <div class="subtitle">{{ root_path }}</div>
+      </div>
+    </div>
+    <div class="actions">
+      <label class="toggle">
+        <input type="checkbox" id="hiddenToggle" />
+        <span>隐藏文件</span>
+      </label>
+      <button type="button" id="refreshBtn" class="btn">刷新</button>
+    </div>
+  </header>
+
+  <nav class="crumbs" id="crumbs" aria-label="路径"></nav>
+
+  <main class="layout">
+    <aside class="panel side" id="sidePanel">
+      <div class="panel-head">
+        <h2>目录</h2>
+        <button type="button" id="closeSide" class="btn ghost">关闭</button>
+      </div>
+      <div class="tree" id="tree"></div>
+    </aside>
+
+    <section class="panel main" id="mainPanel">
+      <div class="panel-head">
+        <h2 id="curTitle">正在加载…</h2>
+        <div class="meta-line" id="curMeta"></div>
+      </div>
+      <div class="toolbar">
+        <button type="button" id="upBtn" class="btn">上级</button>
+        <button type="button" id="openSideBtn" class="btn ghost">目录树</button>
+        <input id="searchInput" class="search" type="search" placeholder="筛选当前目录…" />
+      </div>
+      <div class="list-wrap">
+        <table class="file-table" id="fileTable">
+          <thead>
+            <tr>
+              <th>名称</th>
+              <th>大小</th>
+              <th>修改时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="fileBody">
+            <tr><td colspan="4" class="muted">加载中…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="empty" id="emptyState" hidden>
+        <p>空目录或无可显示文件</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script>
+    window.__ANDROID_LAN__ = {
+      rootName: {{ root_name|tojson }},
+      rootPath: {{ root_path|tojson }},
+      soffice: {{ soffice|tojson }},
+      startPath: {{ start_path|tojson }}
+    };
+  </script>
+  <script src="/static/md.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+stateDiagram-v2
+  [*] --> Detected: 检测到 .ppt/.pptx/.odp
+  Detected --> CheckSoffice: ppt_source_for_display
+  CheckSoffice --> CacheHit: 缓存 PDF 存在
+  CacheHit --> ShowPDF: /doc-pdf iframe
+  CheckSoffice --> Convert: soffice 未执行或过期
+  Convert --> ShowPDF: 转换成功写缓存
+  Convert --> ExtractText: 转换失败/无 soffice
+  ExtractText --> ShowSlides: python-pptx 提取成功
+  ExtractText --> DownloadOnly: 也无法提取文本
+  ShowPDF --> [*]
+  ShowSlides --> [*]
+  DownloadOnly --> [*]

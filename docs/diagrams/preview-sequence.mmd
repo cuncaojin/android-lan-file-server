@@ -1,0 +1,42 @@
+sequenceDiagram
+  autonumber
+  actor U as 手机浏览器
+  participant B as index.html / preview.html
+  participant S as Flask server.py
+  participant FS as ANDROID_LAN_ROOT 磁盘目录
+  participant LO as LibreOffice / python-pptx
+  participant C as /tmp cache
+
+  U->>B: 打开 http://127.0.0.1:9523
+  B->>S: GET /
+  S-->>B: 200 index.html (root_path)
+  U->>B: 浏览目录 / 点击路径
+  B->>S: GET /api/ls?path=...
+  S->>FS: os.scandir(path)
+  FS-->>S: 文件列表
+  S-->>B: JSON dirs/files/kind
+  B->>B: 渲染文件表
+
+  U->>B: 点击文件“预览”
+  B->>S: GET /preview/<path>
+  S->>S: safe_path(rel) 防目录穿越
+  S->>S: detect_kind() 分类
+  alt kind=pdf / audio / video / image
+    S-->>B: preview.html + raw_url
+    B->>S: GET /raw/<path>
+    S->>FS: send_file(conditional=True)
+    FS-->>S: 文件字节 / Range
+    S-->>B: 200/206 + Accept-Ranges
+    B->>B: iframe / audio / video 原生播放
+  else kind=markdown / text
+    S->>FS: 读取文本(截断上限)
+    S-->>B: preview.html + content
+    B->>B: md.js 客户端渲染
+  else kind=ppt
+    S->>LO: soffice --headless --convert-to pdf
+    LO->>C: 写入缓存 PDF
+    C-->>S: pdf path
+    S-->>B: preview.html + /doc-pdf/<path>
+    B->>S: GET /doc-pdf/<path>
+    S-->>B: application/pdf iframe
+  end

@@ -1,0 +1,254 @@
+.preview-main {
+  padding: 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.pdf-shell,
+.ppt-shell {
+  height: calc(100vh - 120px);
+  min-height: 420px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #111;
+  display: flex;
+  flex-direction: column;
+}
+
+/* PDF.js 内嵌渲染（canvas，兼容微信/iOS 等 iframe 不可用的浏览器） */
+.pdfjs-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  background: #111;
+  padding: 10px 0;
+  -webkit-overflow-scrolling: touch;
+}
+.pdfjs-status {
+  color: #9aa4b2;
+  text-align: center;
+  padding: 48px 16px;
+  font-size: 14px;
+  line-height: 2.4;
+}
+.pdfjs-page {
+  margin: 0 auto 10px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  min-height: 48px;
+}
+.pdfjs-page canvas {
+  display: block;
+}
+.pdfjs-page-error {
+  outline: 2px solid rgba(239, 68, 68, 0.6);
+}
+
+.hint {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.ppt-shell .hint,
+.ppt-text .hint,
+.text-toolbar .hint,
+.media-stage .hint {
+  padding: 10px 12px;
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--border);
+}
+
+.ppt-text .slide,
+.md-toolbar,
+.text-toolbar,
+.media-stage,
+.image-stage,
+.fallback {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ppt-text .slide {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+}
+.ppt-text .slide:last-child { border-bottom: 0; }
+.slide-idx {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.ppt-text h3 { margin: 0 0 8px; }
+.ppt-text ul { margin: 0; padding-left: 18px; }
+.ppt-text li { margin: 4px 0; }
+
+.md-toolbar,
+.text-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-bottom: 0;
+}
+
+.markdown-body,
+.md-source,
+.text-view {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  overflow: auto;
+  max-height: calc(100vh - 160px);
+}
+.md-source {
+  font-family: var(--mono);
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.text-view {
+  font-family: var(--mono);
+  font-size: 13px;
+  white-space: pre;
+  word-break: normal;
+}
+.text-view.wrap {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 文本工具栏按钮组 */
+.text-ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+}
+.btn.toggle.on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--bg-soft);
+}
+
+/* 行号渲染：每逻辑行一行，换行时行号仍对齐该行起始 */
+.text-view .tl-row {
+  display: flex;
+  align-items: flex-start;
+  width: max-content;
+  min-width: 100%;
+}
+.text-view.wrap .tl-row {
+  width: auto;
+  min-width: 0;
+}
+.text-view .tl-num {
+  flex: none;
+  user-select: none;
+  -webkit-user-select: none;
+  text-align: right;
+  color: var(--text-dim);
+  min-width: var(--tl-num-w, 4ch);
+  padding-right: 0.75em;
+  margin-right: 0.75em;
+  border-right: 1px solid var(--border);
+  background: var(--bg-elev);
+  position: sticky;
+  left: 0;
+}
+.text-view .tl-code {
+  white-space: inherit;
+  word-break: inherit;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.text-view .tl-code:empty::before {
+  content: "\00a0";
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 { margin-top: 0; }
+.markdown-body pre {
+  background: var(--bg-soft);
+  padding: 12px;
+  border-radius: 8px;
+  overflow: auto;
+}
+.markdown-body code {
+  font-family: var(--mono);
+  background: var(--bg-soft);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.markdown-body blockquote {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--accent);
+  color: var(--text-dim);
+  background: var(--bg-soft);
+  border-radius: 0 8px 8px 0;
+}
+.markdown-body table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+}
+.markdown-body img { max-width: 100%; }
+
+.media-stage {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  min-height: 280px;
+}
+.media-stage.audio audio {
+  width: min(720px, 100%);
+}
+.media-stage.video video {
+  width: min(100%, 960px);
+  max-height: calc(100vh - 160px);
+  background: #000;
+  border-radius: 8px;
+}
+
+.image-stage {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  min-height: 320px;
+  background:
+    linear-gradient(45deg, #222 25%, transparent 25%),
+    linear-gradient(-45deg, #222 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #222 75%),
+    linear-gradient(-45deg, transparent 75%, #222 75%);
+  background-size: 24px 24px;
+  background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+}
+.image-stage img {
+  max-width: 100%;
+  max-height: calc(100vh - 160px);
+  object-fit: contain;
+  background: rgba(0,0,0,0.35);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.fallback {
+  padding: 40px 24px;
+  text-align: center;
+  display: grid;
+  gap: 12px;
+  place-items: center;
+}
+.fallback p { margin: 0; }

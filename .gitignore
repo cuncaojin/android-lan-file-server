@@ -1,0 +1,15 @@
+# Python 编译产物
+__pycache__/
+*.py[cod]
+
+# 部署时生成，含本机真实路径（DEFAULT_ROOT 等），勿入库
+config.env
+
+# 本地工具状态
+.mimocode/
+
+# 本地私有配置（含个人路径，勿入库）
+android-lan-file-server.local.conf
+
+# 运行日志目录
+logs/
