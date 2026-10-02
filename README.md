@@ -1,6 +1,12 @@
 # android-lan-file-server
 
+**[English](README.en.md) | 简体中文**
+
 在 **安卓手机（Termux Ubuntu 子系统）** 上运行的**局域网本地文件服务器**：手机即服务器，同一 Wi-Fi 下的电脑、平板、其他手机用浏览器打开地址即可浏览和预览你分享的目录——照片、视频、PDF、Word、Excel、PPT、Markdown 在线查看。**无需公网、无需账号、文件不出局域网。**
+
+<p align="center">
+  <img src="docs/img/android-lan-file-server.png" alt="android-lan-file-server" width="820">
+</p>
 
 | 项目 | 说明 |
 |------|------|
