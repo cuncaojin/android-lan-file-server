@@ -17,16 +17,25 @@
     return "#";
   }
 
-  function inline(src) {
+  function inline(src, basePath) {
     // src is already HTML-escaped text
     var s = String(src);
     s = s.replace(/`([^`]+)`/g, function (_, c) {
       return "<code>" + c + "</code>";
     });
+    // 反斜杠转义：先占位为 n，所有规则跑完后还原为字面字符
+    var esc = [];
+    s = s.replace(/\\([\\`*_~[\]()#+\-.!{}])/g, function (_, c) {
+      esc.push(c);
+      return "" + (esc.length - 1) + "";
+    });
+    // 相对路径图片：拼为 /raw/<当前目录>/<文件>，浏览器可直接取原图
     s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/g, function (_, alt, url) {
-      return (
-        '<img alt="' + alt + '" src="' + escapeHtml(safeUrl(url)) + '" />'
-      );
+      var u = String(url || "").trim();
+      if (!/^(https?:|mailto:|\/|#)/i.test(u)) {
+        u = "/raw/" + (basePath ? basePath + "/" : "") + u.replace(/^\.?\//, "");
+      }
+      return '<img alt="' + alt + '" src="' + escapeHtml(safeUrl(u)) + '" />';
     });
     s = s.replace(/\[([^\]]+)\]\(([^)\s]+)[^)]*\)/g, function (_, text, url) {
       return (
@@ -37,14 +46,20 @@
         "</a>"
       );
     });
+    s = s.replace(/\*\*\*([^*\n]+)\*\*\*/g, "<strong><em>$1</em></strong>");
     s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-    s = s.replace(/(^|[\s(])\*([^*\n]+)\*(?=\s|$|[.,;:!?)])/g, "$1<em>$2</em>");
-    s = s.replace(/(^|[\s(])_([^_\n]+)_(?=\s|$|[.,;:!?)])/g, "$1<em>$2</em>");
+    // 斜体：前缀允许中文标点；结尾只排除紧连的词字符，兼容 CJK 标点
+    s = s.replace(/(^|[^*\w])\*([^*\n]+)\*(?![*\w])/g, "$1<em>$2</em>");
+    s = s.replace(/(^|[^_\w])_([^_\n]+)_(?![*\w])/g, "$1<em>$2</em>");
     s = s.replace(/~~([^~]+)~~/g, "<del>$1</del>");
+    s = s.replace(/(\d+)/g, function (_, n) {
+      return esc[+n] !== undefined ? esc[+n] : "" + n + "";
+    });
     return s;
   }
 
-  function render(markdown) {
+  function render(markdown, opts) {
+    var basePath = (opts && opts.basePath) || "";
     var lines = String(markdown).replace(/\r\n?/g, "\n").split("\n");
     var html = [];
     var i = 0;
@@ -54,23 +69,6 @@
       while (listStack.length > toDepth) {
         var t = listStack.pop();
         html.push(t === "ul" ? "</ul>" : "</ol>");
-      }
-    }
-
-    function pushList(kind) {
-      var need = 1;
-      while (listStack.length > need) {
-        html.push(listStack.pop() === "ul" ? "</ul>" : "</ol>");
-      }
-      if (listStack.length === 0) {
-        html.push(kind === "ul" ? "<ul>" : "<ol>");
-        listStack.push(kind);
-        return;
-      }
-      if (listStack[listStack.length - 1] !== kind) {
-        html.push(listStack.pop() === "ul" ? "</ul>" : "</ol>");
-        html.push(kind === "ul" ? "<ul>" : "<ol>");
-        listStack.push(kind);
       }
     }
 
@@ -128,13 +126,13 @@
         }
         var t = ["<table><thead><tr>"];
         header.forEach(function (h) {
-          t.push("<th>" + inline(escapeHtml(h)) + "</th>");
+          t.push("<th>" + inline(escapeHtml(h), basePath) + "</th>");
         });
         t.push("</tr></thead><tbody>");
         rows.forEach(function (row) {
           t.push("<tr>");
           row.forEach(function (c) {
-            t.push("<td>" + inline(escapeHtml(c)) + "</td>");
+            t.push("<td>" + inline(escapeHtml(c), basePath) + "</td>");
           });
           t.push("</tr>");
         });
@@ -147,8 +145,21 @@
       if (h) {
         closeLists(0);
         var level = h[1].length;
+        var htext = h[2];
+        var hid = "";
+        var am = /\s*\{#([^}]+)\}\s*$/.exec(htext);
+        if (am) {
+          hid = am[1];
+          htext = htext.replace(am[0], "");
+        }
         html.push(
-          "<h" + level + ">" + inline(escapeHtml(h[2])) + "</h" + level + ">"
+          "<h" +
+            level +
+            (hid ? ' id="' + escapeHtml(hid) + '"' : "") +
+            ">" +
+            inline(escapeHtml(htext), basePath) +
+            "</h" +
+            level + ">"
         );
         i++;
         continue;
@@ -168,7 +179,9 @@
           quote.push(lines[i].replace(/^\s*>\s?/, ""));
           i++;
         }
-        html.push("<blockquote>" + render(quote.join("\n")) + "</blockquote>");
+        html.push(
+          "<blockquote>" + render(quote.join("\n"), opts) + "</blockquote>"
+        );
         continue;
       }
 
@@ -177,13 +190,40 @@
       if (ul || ol) {
         var isUl = !!ul;
         var content = isUl ? ul[2] : ol[2];
-        var depth = Math.floor(((isUl ? ul[1] : ol[1]) || "").length / 2);
-        if (depth > 1) depth = 1;
+        var task = "";
+        var tm = /^\[([ xX])\]\s+(.*)$/.exec(content);
+        if (tm) {
+          task =
+            '<input type="checkbox" disabled' +
+            (tm[1] !== " " ? " checked" : "") +
+            "> ";
+          content = tm[2];
+        }
+        var indent = (isUl ? ul[1] : ol[1] || "").length;
+        var depth = Math.floor(indent / 2);
+        if (depth > 3) depth = 3;
         while (listStack.length > depth + 1) {
           html.push(listStack.pop() === "ul" ? "</ul>" : "</ol>");
         }
-        pushList(isUl ? "ul" : "ol");
-        html.push("<li>" + inline(escapeHtml(content)) + "</li>");
+        while (listStack.length < depth + 1) {
+          html.push(isUl ? "<ul>" : "<ol>");
+          listStack.push(isUl ? "ul" : "ol");
+        }
+        var top = listStack[listStack.length - 1];
+        if ((top === "ul") !== isUl) {
+          html.push(top === "ul" ? "</ul>" : "</ol>");
+          listStack.pop();
+          html.push(isUl ? "<ul>" : "<ol>");
+          listStack.push(isUl ? "ul" : "ol");
+        }
+        html.push(
+          "<li" +
+            (task ? ' class="task"' : "") +
+            ">" +
+            task +
+            inline(escapeHtml(content), basePath) +
+            "</li>"
+        );
         i++;
         continue;
       }
@@ -203,7 +243,9 @@
         i++;
       }
       html.push(
-        "<p>" + inline(escapeHtml(para.join("\n")).replace(/\n/g, "<br />")) + "</p>"
+        "<p>" +
+          inline(escapeHtml(para.join("\n")), basePath).replace(/\n/g, "<br />") +
+          "</p>"
       );
     }
 

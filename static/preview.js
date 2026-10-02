@@ -17,7 +17,13 @@
       raw = payload.textContent || "";
     }
 
-    body.innerHTML = window.MDWeb ? window.MDWeb.render(raw) : escapeHtml(raw);
+    // 相对路径图片按当前文件所在目录解析（md.js 拼到 /raw/<dir>/<file>）
+    var rel = String(meta.path || "");
+    var slash = rel.lastIndexOf("/");
+    var basePath = slash >= 0 ? rel.slice(0, slash) : "";
+    body.innerHTML = window.MDWeb
+      ? window.MDWeb.render(raw, { basePath: basePath })
+      : escapeHtml(raw);
     if (source) {
       source.textContent = raw;
     }
