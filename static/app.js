@@ -17,9 +17,18 @@
     return { key: "name", dir: "asc" };
   }
 
+  // 显示隐藏文件：全局设置，一处开关所有目录生效，跨会话记忆
+  function loadHidden() {
+    try {
+      return localStorage.getItem("alfs-show-hidden") === "1";
+    } catch (e) {
+      return false;
+    }
+  }
+
   var state = {
     path: cfg.startPath || "",
-    hidden: false,
+    hidden: loadHidden(),
     data: null,
     query: "",
     sort: loadSort(),
@@ -430,10 +439,16 @@
   els.closeSide.addEventListener("click", function () {
     els.sidePanel.classList.remove("open");
   });
-  els.hiddenToggle.addEventListener("change", function () {
-    state.hidden = els.hiddenToggle.checked;
-    load(state.path, { push: false });
-  });
+  if (els.hiddenToggle) {
+    els.hiddenToggle.checked = state.hidden; // 菜单勾选态与全局设置同步
+    els.hiddenToggle.addEventListener("change", function () {
+      state.hidden = els.hiddenToggle.checked;
+      try {
+        localStorage.setItem("alfs-show-hidden", state.hidden ? "1" : "0");
+      } catch (e) {}
+      load(state.path, { push: false });
+    });
+  }
   els.searchInput.addEventListener("input", function () {
     state.query = els.searchInput.value || "";
     if (state.data) renderTable(state.data);

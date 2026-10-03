@@ -55,6 +55,35 @@ a:hover { text-decoration: underline; }
 
 .topbar.sticky { position: sticky; }
 
+/* 列表页顶栏两行：左侧目录名+父路径可换行，右侧按钮固定右上角、不被长文字遮挡 */
+.list-nav {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+.list-nav .brand {
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: flex-start;
+}
+.list-nav .actions {
+  flex: 0 0 auto;
+  margin-left: auto;
+  align-self: flex-start;
+}
+/* 目录名过长直接换行（覆盖全局 .title 的单行省略） */
+.brand .title {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  max-width: none;
+  word-break: break-all;
+}
+.brand .subtitle { max-width: none; }
+
 .brand {
   display: flex;
   align-items: center;
@@ -155,37 +184,47 @@ a:hover { text-decoration: underline; }
   white-space: nowrap;
 }
 .mi:hover { background: var(--bg-soft); }
-/* 隐藏文件开关（复选框内嵌于菜单项） */
+/* 隐藏文件开关：文字在左、勾选框在右（全局设置，一处生效） */
 .mi-check {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
   cursor: pointer;
 }
+.mi-check span:first-child { flex: 1 1 auto; }
+/* 原生勾选框视觉隐藏，用右侧 .check-mark 呈现（保留无障碍语义） */
 .mi-check input {
-  appearance: none;
-  width: 15px;
-  height: 15px;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
   margin: 0;
+}
+.check-mark {
+  width: 16px;
+  height: 16px;
+  flex: none;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 5px;
   background: var(--bg-soft);
   display: inline-grid;
   place-content: center;
-  flex: none;
 }
-.mi-check input:checked {
-  background: var(--accent);
-  border-color: transparent;
-}
-.mi-check input:checked::after {
+.check-mark::after {
   content: "";
   width: 8px;
   height: 4px;
   border-left: 2px solid #fff;
   border-bottom: 2px solid #fff;
   transform: rotate(-45deg) translate(1px, -1px);
+  opacity: 0;
 }
+.mi-check input:checked ~ .check-mark {
+  background: var(--accent);
+  border-color: transparent;
+}
+.mi-check input:checked ~ .check-mark::after { opacity: 1; }
 /* 展开式子菜单（排序方式） */
 .mi-expand {
   display: flex;

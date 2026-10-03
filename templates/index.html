@@ -9,7 +9,7 @@
 </head>
 <body>
   <header class="topbar" id="topbar">
-    <div class="nav-row">
+    <div class="nav-row list-nav">
       <div class="brand compact">
         <div>
           <div class="title" id="dirTitle">正在加载…</div>
@@ -21,7 +21,11 @@
         <button type="button" class="btn icon" id="moreBtn" aria-haspopup="menu" aria-expanded="false" title="更多操作">⋮</button>
       </div>
       <div class="more-menu" id="moreMenu" role="menu" hidden>
-        <label class="mi mi-check"><input type="checkbox" id="hiddenToggle" /><span>显示隐藏文件</span></label>
+        <label class="mi mi-check">
+          <span>显示隐藏文件</span>
+          <input type="checkbox" id="hiddenToggle" />
+          <span class="check-mark" aria-hidden="true"></span>
+        </label>
         <button type="button" class="mi" id="miCopyPath" role="menuitem">复制完整路径</button>
         <button type="button" class="mi" id="miCopyName" role="menuitem">复制文件名</button>
         <button type="button" class="mi mi-expand" id="sortToggle" aria-expanded="false" role="menuitem">
