@@ -43,15 +43,15 @@ A **LAN file server** running on an **Android phone (Termux Ubuntu subsystem)**:
 ## 1. Features
 
 ### 1.1 File browsing
-- Directory tree / single-line full path / parent directory
-- The top bar shows **one full absolute path line**; tap any segment in the middle to jump straight to that directory. Segments outside the shared root are tappable or greyed out according to `ALLOW_OUTSIDE_ROOT`
+- Directory tree / two-row top-bar navigation / pull-to-refresh
+- The top bar shows the **current directory name** on the first line and the **parent directory's full path** on the second (wraps when long). Tap any segment to jump straight to that directory; segments outside the shared root are tappable or greyed out according to `ALLOW_OUTSIDE_ROOT`
 - On phones/tablets, **pull down to refresh** the current directory (the refresh button is hidden on touch devices and kept for desktop browsers)
 - Chinese and space-containing paths
-- Filenames **wrap in full** (no ellipsis truncation); previewability is expressed by the button on the right (a "Preview" button appears only when preview is available)
-- Mobile card layout in two rows: the name takes the full first row, `size · time` and action buttons on the second
-- Every row and the preview page support **one-click copy of the server's full path**, handy for pasting straight into a terminal
-- Optional display of hidden files (names starting with `.`)
-- Name filter for the current directory
+- Filenames **wrap in full** (no ellipsis truncation); **click the name to enter** the directory or open the preview page — all file actions live in the preview page's `⋮` top-bar menu
+- The toolbar shows an **N entries** count for the current directory on the left (flagged when truncated), with the directory tree and name filter on the right
+- List page `⋮` menu: **show hidden files / copy full path / copy file name / sort (name·time × asc·desc, remembered across sessions) / about** (with version and Gitee + GitHub repo links; tap the backdrop to dismiss instantly)
+- Default sort is name ascending with directories always first; the same order drives two-finger swipe navigation on the preview page
+- Mobile card layout in two rows: the name takes the full first row, `size · time` on the second
 - Returning from a preview to the list **auto-focuses the file you were just viewing**
 - Very large directories are truncated (about 5000 entries max by default)
 
@@ -74,7 +74,7 @@ Every file type also offers **Preview** / **Download** / **Raw link**.
 
 Previewable files in the same directory can be switched by **two-finger horizontal swipe** on the preview page: swipe left for the next file, right for the previous one, stopping at the first/last file (**no wrap-around**; swiping further shows an "already at the first/last file" toast). A single-finger horizontal swipe never switches files — it shows a toast prompting you to use two fingers instead (preventing accidental switches while panning text or moving zoomed content). The top bar behaves like an Android toolbar: **it hides on scroll-down and reappears on scroll-up**.
 
-The `⋮` menu in the preview top bar offers **copy path / download / raw file (opens in a new window)** — every file type opens its raw file from this one place; **long-pressing or double-clicking the file name** opens the same menu. The mode bar under the top bar holds the preview-related buttons (format/wrap/line numbers/font size for plain text, render/source for Markdown; buttons wrap onto multiple lines when space runs out).
+The `⋮` menu in the preview top bar offers **copy full path / copy file name / download / raw file (opens in a new window)** — every file type opens its raw file from this one place; **long-pressing or double-clicking the file name** opens the same menu. The mode bar under the top bar holds the preview-related buttons (format/wrap/line numbers/font size for plain text, render/source for Markdown; buttons wrap onto multiple lines when space runs out).
 
 ### 1.3 Service characteristics
 - Listens on `0.0.0.0` by default, **reachable from both the phone and the LAN**; changing it back to `127.0.0.1` restricts access to the phone itself
@@ -528,7 +528,7 @@ flowchart TB
 | Office conversion | `convert_to_pdf()` | `soffice --headless --convert-to pdf` (shared by PPT/Word/Excel) |
 | PDF rendering | `static/vendor/pdfjs*.mjs` | PDF.js 6.x (Apache-2.0, vendored in the repo, ~1.8MB); canvas rendering compatible with WeChat/iOS |
 | PPT text | `extract_ppt_text()` | Slide text extraction via python-pptx |
-| Frontend listing | `static/app.js` | Fetches `/api/ls`, renders directories/files/action buttons |
+| Frontend listing | `static/app.js` | Fetches `/api/ls`, renders the file list, top-bar navigation, ⋮ menu and sorting |
 | Markdown | `static/md.js` | Safe client-side rendering (escape first, then wrap tags) |
 | Deploy orchestration | `deploy.sh` | Verify directory → install deps → sync files → start → health check |
 | Process management | `start.sh` / `stop.sh` | PID file + port-based fallback cleanup |

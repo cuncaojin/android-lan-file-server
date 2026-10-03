@@ -311,41 +311,6 @@
   background: var(--bg-soft);
 }
 .preview-page .back:active { background: var(--bg); }
-.btn.icon {
-  padding: 6px 12px;
-  font-size: 18px;
-  line-height: 1;
-}
-.more-menu {
-  position: absolute;
-  top: calc(100% + 2px);
-  right: 8px;
-  z-index: 30;
-  min-width: 168px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-}
-.more-menu[hidden] { display: none; }
-.mi {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font-size: 14px;
-  text-align: left;
-  text-decoration: none;
-  padding: 11px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.mi:hover { background: var(--bg-soft); }
 
 /* 文件名：提供长按/双击手势，禁用文本选择避免误触 */
 .preview-page .topbar .title {

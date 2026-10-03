@@ -198,7 +198,7 @@
     });
   }
 
-  // 顶栏 ⋮ 菜单：复制路径 / 下载 / 原始文件；长按或双击文件名也可打开
+  // 顶栏 ⋮ 菜单：复制完整路径 / 复制文件名 / 下载 / 原始文件；长按或双击文件名也可打开
   function bindMoreMenu() {
     var btn = document.getElementById("moreBtn");
     var menu = document.getElementById("moreMenu");
@@ -250,16 +250,30 @@
       title.addEventListener("dblclick", open);
     }
 
-    var copy = document.getElementById("miCopy");
-    if (copy && meta.full_path) {
-      copy.addEventListener("click", function () {
+    var copyPath = document.getElementById("miCopyPath");
+    if (copyPath && meta.full_path) {
+      copyPath.addEventListener("click", function () {
         close();
         copyText(meta.full_path).then(
           function () {
-            showToast("路径已复制", 1500);
+            showToast("完整路径已复制", 1500);
           },
           function () {
             window.prompt("自动复制失败，长按手动复制：", meta.full_path);
+          }
+        );
+      });
+    }
+    var copyName = document.getElementById("miCopyName");
+    if (copyName && meta.name) {
+      copyName.addEventListener("click", function () {
+        close();
+        copyText(meta.name).then(
+          function () {
+            showToast("文件名已复制", 1500);
+          },
+          function () {
+            window.prompt("自动复制失败，长按手动复制：", meta.name);
           }
         );
       });
@@ -721,8 +735,22 @@
           var files = (data.files || []).filter(function (f) {
             return f.previewable;
           });
+          // 与列表页同一排序（localStorage alfs-list-sort），滑动顺序=列表顺序
+          var sort = { key: "name", dir: "asc" };
+          try {
+            var v = JSON.parse(localStorage.getItem("alfs-list-sort") || "{}");
+            if (
+              (v.key === "name" || v.key === "time") &&
+              (v.dir === "asc" || v.dir === "desc")
+            ) {
+              sort = { key: v.key, dir: v.dir };
+            }
+          } catch (e) {}
           files.sort(function (a, b) {
-            return String(a.name).localeCompare(String(b.name), "zh");
+            var r = 0;
+            if (sort.key === "time") r = (a.mtime || 0) - (b.mtime || 0);
+            if (r === 0) r = String(a.name).localeCompare(String(b.name), "zh");
+            return sort.dir === "desc" ? -r : r;
           });
           var found = files.some(function (f) {
             return f.path === meta.path;

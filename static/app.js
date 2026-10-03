@@ -2,26 +2,51 @@
   "use strict";
 
   var cfg = window.__ANDROID_LAN__ || {};
+
+  // 排序状态：{key: name|time, dir: asc|desc}，跨会话记忆（预览页滑动顺序也读它）
+  function loadSort() {
+    try {
+      var v = JSON.parse(localStorage.getItem("alfs-list-sort") || "{}");
+      if (
+        (v.key === "name" || v.key === "time") &&
+        (v.dir === "asc" || v.dir === "desc")
+      ) {
+        return { key: v.key, dir: v.dir };
+      }
+    } catch (e) {}
+    return { key: "name", dir: "asc" };
+  }
+
   var state = {
     path: cfg.startPath || "",
     hidden: false,
     data: null,
     query: "",
+    sort: loadSort(),
   };
 
   var els = {
-    crumbs: document.getElementById("crumbs"),
+    dirTitle: document.getElementById("dirTitle"),
+    pathLine: document.getElementById("pathLine"),
+    countBadge: document.getElementById("countBadge"),
     tree: document.getElementById("tree"),
     fileBody: document.getElementById("fileBody"),
     emptyState: document.getElementById("emptyState"),
-    curTitle: document.getElementById("curTitle"),
-    curMeta: document.getElementById("curMeta"),
-    upBtn: document.getElementById("upBtn"),
     refreshBtn: document.getElementById("refreshBtn"),
+    moreBtn: document.getElementById("moreBtn"),
+    moreMenu: document.getElementById("moreMenu"),
+    hiddenToggle: document.getElementById("hiddenToggle"),
+    miCopyPath: document.getElementById("miCopyPath"),
+    miCopyName: document.getElementById("miCopyName"),
+    sortToggle: document.getElementById("sortToggle"),
+    sortNote: document.getElementById("sortNote"),
+    sortMenu: document.getElementById("sortMenu"),
+    aboutBtn: document.getElementById("aboutBtn"),
+    aboutModal: document.getElementById("aboutModal"),
+    aboutClose: document.getElementById("aboutClose"),
     openSideBtn: document.getElementById("openSideBtn"),
     closeSide: document.getElementById("closeSide"),
     sidePanel: document.getElementById("sidePanel"),
-    hiddenToggle: document.getElementById("hiddenToggle"),
     searchInput: document.getElementById("searchInput"),
     toast: document.getElementById("toast"),
   };
@@ -97,10 +122,6 @@
       .join("/");
   }
 
-  function rawUrl(path, download) {
-    return "/raw/" + encodePath(path) + qs({ download: download ? 1 : "" });
-  }
-
   function browseUrl(path) {
     return "/?path=" + encodeURIComponent(path || "");
   }
@@ -129,33 +150,39 @@
     return res.json();
   }
 
-  // 单行完整绝对路径：任意中间段可点击跳转；
-  // 分享根之外的段按 allow_outside 决定可点（否则置灰不可跳）
-  function renderPathRow(data) {
-    var abs = data.path_abs || "";
-    if (!abs) {
-      var root = String(cfg.rootPath || "").replace(/\/+$/, "");
-      var sp = state.path || "";
-      abs = sp.charAt(0) === "@" ? sp.slice(1) : root + (sp ? "/" + sp : "");
-    }
+  // 当前目录绝对路径 / 目录名（复制与顶栏渲染共用）
+  function currentAbs() {
+    if (state.data && state.data.path_abs) return state.data.path_abs;
+    var root = String(cfg.rootPath || "").replace(/\/+$/, "");
+    var sp = state.path || "";
+    return sp.charAt(0) === "@" ? sp.slice(1) : root + (sp ? "/" + sp : "");
+  }
+  function currentName() {
+    var segs = currentAbs().split("/").filter(Boolean);
+    return segs.length ? segs[segs.length - 1] : cfg.rootName || "/";
+  }
+
+  // 顶栏两行：第一行当前目录名，第二行父目录完整路径（分段可点，可换行）
+  function renderPathLine() {
+    var abs = currentAbs();
+    var segs = abs.split("/").filter(Boolean);
+    var cur = segs.length ? segs[segs.length - 1] : cfg.rootName || "/";
+    if (els.dirTitle) els.dirTitle.textContent = cur;
+    document.title = cur + " · 文件浏览";
+
+    if (!els.pathLine) return;
     var rootNorm = String(cfg.rootPath || "").replace(/\/+$/, "");
-    var parts = abs.split("/").filter(Boolean);
-    if (!parts.length) {
-      els.crumbs.innerHTML = '<span class="sep">/</span>';
+    var parentSegs = segs.slice(0, -1); // 父目录 = 去掉当前目录名
+    if (!parentSegs.length) {
+      els.pathLine.innerHTML = '<span class="sep">/</span>';
       return;
     }
-    var html = ['<span class="sep root-sep">/</span>'];
+    var html = ['<span class="sep">/</span>'];
     var acc = "";
-    parts.forEach(function (seg, i) {
+    parentSegs.forEach(function (seg, i) {
       acc += "/" + seg;
-      var last = i === parts.length - 1;
-      if (last) {
-        html.push('<strong title="' + escapeHtml(abs) + '">' + escapeHtml(seg) + "</strong>");
-        return;
-      }
       var inRoot =
-        rootNorm &&
-        (acc === rootNorm || acc.indexOf(rootNorm + "/") === 0);
+        rootNorm && (acc === rootNorm || acc.indexOf(rootNorm + "/") === 0);
       if (inRoot) {
         var rel = acc === rootNorm ? "" : acc.slice(rootNorm.length + 1);
         html.push(
@@ -173,9 +200,9 @@
       } else {
         html.push('<span class="dead" title="超出分享根目录，不可访问">' + escapeHtml(seg) + "</span>");
       }
-      html.push('<span class="sep">/</span>');
+      if (i < parentSegs.length - 1) html.push('<span class="sep">/</span>');
     });
-    els.crumbs.innerHTML = html.join("");
+    els.pathLine.innerHTML = html.join("");
   }
 
   function escapeHtml(s) {
@@ -197,12 +224,16 @@
 
     items.sort(function (a, b) {
       if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
-      return String(a.name).localeCompare(String(b.name), "zh");
+      var r = 0;
+      if (state.sort.key === "time") r = (a.mtime || 0) - (b.mtime || 0);
+      if (r === 0)
+        r = String(a.name).localeCompare(String(b.name), "zh");
+      return state.sort.dir === "desc" ? -r : r;
     });
 
     if (!items.length) {
       els.fileBody.innerHTML =
-        '<tr><td colspan="4" class="muted">没有匹配的文件</td></tr>';
+        '<tr><td colspan="3" class="muted">没有匹配的文件</td></tr>';
       els.emptyState.hidden = items.length > 0;
       return;
     }
@@ -229,53 +260,17 @@
         "</a>" +
         "</div>";
 
-      var full = (cfg.rootPath || "").replace(/\/+$/, "") + "/" + item.path;
-      var ops = [];
-      if (item.is_dir) {
-        ops.push(
-          '<a class="btn ghost" href="' + browseUrl(item.path) + '">打开</a>'
-        );
-      } else {
-        if (item.previewable) {
-          ops.push(
-            '<a class="btn" href="' +
-              previewUrl(item.path, item.kind) +
-              '">预览</a>'
-          );
-        }
-        ops.push(
-          '<a class="btn ghost" href="' +
-            rawUrl(item.path, true) +
-            '" download="' +
-            escapeHtml(item.name) +
-            '">下载</a>'
-        );
-        ops.push(
-          '<a class="btn ghost" href="' +
-            rawUrl(item.path, false) +
-            '" target="_blank" rel="noopener">原始</a>'
-        );
-      }
-      ops.push(
-        '<button type="button" class="btn ghost" data-copy="' +
-          escapeHtml(full) +
-          '" title="复制服务器完整路径，可在终端直接使用" aria-label="复制完整路径">📋</button>'
-      );
-
       rows.push(
         "<tr>" +
           "<td>" +
           nameHtml +
           "</td>" +
           '<td class="muted">' +
-          (item.is_dir ? "目录" : escapeHtml(item.size_h || "")) +
+          (item.is_dir ? "" : escapeHtml(item.size_h || "")) +
           "</td>" +
           '<td class="muted">' +
           escapeHtml(item.mtime_h || "") +
           "</td>" +
-          '<td><div class="ops">' +
-          ops.join("") +
-          "</div></td>" +
           "</tr>"
       );
     });
@@ -337,16 +332,9 @@
   }
 
   function renderHeader(data) {
-    // 面板标题只显示目录名（完整路径已在顶栏路径行展示）
-    var parts = String(data.path || "").split("/").filter(Boolean);
-    els.curTitle.textContent = parts.length
-      ? parts[parts.length - 1]
-      : cfg.rootName || "/";
-    var bits = [];
-    bits.push(data.count + " 项");
-    if (data.truncated) bits.push("（数量过大已截断）");
-    els.curMeta.textContent = bits.join(" · ");
-    els.upBtn.disabled = !state.path;
+    var bits = [data.count + " 项"];
+    if (data.truncated) bits.push("已截断");
+    els.countBadge.textContent = bits.join(" · ");
   }
 
   // 预览页退出时写入 sessionStorage；此处消费一次，把焦点还给刚看过的文件
@@ -382,11 +370,11 @@
     state.path = path || "";
     if (opts.push !== false) setHistory(state.path);
 
-    els.curTitle.textContent = "正在加载…";
+    if (els.dirTitle) els.dirTitle.textContent = "正在加载…";
     try {
       var data = await fetchLs(state.path);
       state.data = data;
-      renderPathRow(data);
+      renderPathLine();
       renderTree(data);
       renderHeader(data);
       renderTable(data);
@@ -395,42 +383,19 @@
         els.searchInput.value = "";
         state.query = "";
       }
-      document.title = (state.path || "lan file server") + " · 文件浏览";
     } catch (e) {
       els.fileBody.innerHTML =
-        '<tr><td colspan="4" class="muted">加载失败：' +
+        '<tr><td colspan="3" class="muted">加载失败：' +
         escapeHtml(e.message || String(e)) +
         "</td></tr>";
       toast(e.message || "加载失败");
     }
   }
 
-  function goParent() {
-    if (!state.path) return;
-    var parts = state.path.split("/").filter(Boolean);
-    parts.pop();
-    load(parts.join("/"));
-  }
-
   // Events
   els.fileBody.addEventListener("click", function (e) {
-    var cp = e.target.closest("[data-copy]");
-    if (cp) {
-      e.preventDefault();
-      copyText(cp.getAttribute("data-copy")).then(
-        function () {
-          toast("已复制完整路径");
-        },
-        function () {
-          toast("复制失败，请手动选择复制");
-        }
-      );
-      return;
-    }
     var a = e.target.closest("a[data-path]");
     if (!a) return;
-    // allow browser default for download / target=_blank
-    if (a.getAttribute("download") || a.getAttribute("target") === "_blank") return;
     e.preventDefault();
     var path = a.getAttribute("data-path");
     if (a.getAttribute("data-dir") === "1") {
@@ -441,7 +406,7 @@
     }
   });
 
-  els.crumbs.addEventListener("click", function (e) {
+  els.pathLine.addEventListener("click", function (e) {
     var a = e.target.closest("a[data-path]");
     if (!a) return;
     e.preventDefault();
@@ -455,7 +420,6 @@
     els.sidePanel.classList.remove("open");
   });
 
-  els.upBtn.addEventListener("click", goParent);
   els.refreshBtn.addEventListener("click", function () {
     load(state.path, { push: false });
     toast("已刷新");
@@ -474,6 +438,126 @@
     state.query = els.searchInput.value || "";
     if (state.data) renderTable(state.data);
   });
+
+  // ── 顶栏 ⋮ 菜单：开关 / 排序子菜单 / 两项复制 / 关于 ──
+  var SORT_LABELS = {
+    "name:asc": "名称正序",
+    "name:desc": "名称倒序",
+    "time:asc": "时间正序",
+    "time:desc": "时间倒序",
+  };
+
+  function sortKey() {
+    return state.sort.key + ":" + state.sort.dir;
+  }
+
+  function closeMenu() {
+    if (!els.moreMenu) return;
+    els.moreMenu.hidden = true;
+    if (els.moreBtn) els.moreBtn.setAttribute("aria-expanded", "false");
+    if (els.sortMenu) els.sortMenu.hidden = true;
+    if (els.sortToggle) els.sortToggle.setAttribute("aria-expanded", "false");
+  }
+
+  function syncSortUI() {
+    if (!els.sortNote || !els.sortMenu) return;
+    els.sortNote.textContent = SORT_LABELS[sortKey()] || "";
+    var opts = els.sortMenu.querySelectorAll("[data-sort]");
+    for (var i = 0; i < opts.length; i++) {
+      opts[i].classList.toggle(
+        "on",
+        opts[i].getAttribute("data-sort") === sortKey()
+      );
+    }
+  }
+
+  if (els.moreBtn && els.moreMenu) {
+    els.moreBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var opening = els.moreMenu.hidden;
+      els.moreMenu.hidden = !opening;
+      els.moreBtn.setAttribute("aria-expanded", opening ? "true" : "false");
+    });
+    document.addEventListener("click", function (e) {
+      if (els.moreMenu.hidden) return;
+      if (!e.target.closest) return;
+      if (e.target.closest("#moreMenu") || e.target.closest("#moreBtn")) return;
+      closeMenu();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeMenu();
+    });
+  }
+
+  if (els.sortToggle && els.sortMenu) {
+    syncSortUI();
+    els.sortToggle.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var opening = els.sortMenu.hidden;
+      els.sortMenu.hidden = !opening;
+      els.sortToggle.setAttribute("aria-expanded", opening ? "true" : "false");
+    });
+    els.sortMenu.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var b = e.target.closest("[data-sort]");
+      if (!b) return;
+      var parts = b.getAttribute("data-sort").split(":");
+      state.sort = { key: parts[0], dir: parts[1] };
+      try {
+        localStorage.setItem("alfs-list-sort", JSON.stringify(state.sort));
+      } catch (err) {}
+      syncSortUI();
+      if (state.data) renderTable(state.data);
+      closeMenu();
+      toast("已按" + SORT_LABELS[sortKey()]);
+    });
+  }
+
+  if (els.miCopyPath) {
+    els.miCopyPath.addEventListener("click", function () {
+      closeMenu();
+      copyText(currentAbs()).then(
+        function () {
+          toast("已复制完整路径");
+        },
+        function () {
+          toast("复制失败，请手动选择复制");
+        }
+      );
+    });
+  }
+  if (els.miCopyName) {
+    els.miCopyName.addEventListener("click", function () {
+      closeMenu();
+      copyText(currentName()).then(
+        function () {
+          toast("已复制文件名");
+        },
+        function () {
+          toast("复制失败，请手动选择复制");
+        }
+      );
+    });
+  }
+
+  if (els.aboutBtn && els.aboutModal) {
+    els.aboutBtn.addEventListener("click", function () {
+      closeMenu();
+      els.aboutModal.hidden = false;
+    });
+    if (els.aboutClose) {
+      els.aboutClose.addEventListener("click", function () {
+        els.aboutModal.hidden = true;
+      });
+    }
+    // 点遮罩任意处立即跳过
+    els.aboutModal.addEventListener("click", function (e) {
+      if (e.target === els.aboutModal) els.aboutModal.hidden = true;
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") els.aboutModal.hidden = true;
+    });
+  }
 
   window.addEventListener("popstate", function (e) {
     var path = (e.state && e.state.path) || "";

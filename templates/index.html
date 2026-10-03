@@ -4,26 +4,39 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="color-scheme" content="light dark" />
-  <title>lan file server · 文件浏览</title>
+  <title>文件浏览</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div>
-        <div class="title">lan file server</div>
+  <header class="topbar" id="topbar">
+    <div class="nav-row">
+      <div class="brand compact">
+        <div>
+          <div class="title" id="dirTitle">正在加载…</div>
+          <div class="subtitle pathline" id="pathLine"></div>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" id="refreshBtn" class="btn" title="刷新当前目录">刷新</button>
+        <button type="button" class="btn icon" id="moreBtn" aria-haspopup="menu" aria-expanded="false" title="更多操作">⋮</button>
+      </div>
+      <div class="more-menu" id="moreMenu" role="menu" hidden>
+        <label class="mi mi-check"><input type="checkbox" id="hiddenToggle" /><span>显示隐藏文件</span></label>
+        <button type="button" class="mi" id="miCopyPath" role="menuitem">复制完整路径</button>
+        <button type="button" class="mi" id="miCopyName" role="menuitem">复制文件名</button>
+        <button type="button" class="mi mi-expand" id="sortToggle" aria-expanded="false" role="menuitem">
+          <span>排序方式</span><span class="mi-note" id="sortNote">名称正序</span>
+        </button>
+        <div class="sub-menu" id="sortMenu" hidden>
+          <button type="button" class="mi" data-sort="name:asc">名称正序</button>
+          <button type="button" class="mi" data-sort="name:desc">名称倒序</button>
+          <button type="button" class="mi" data-sort="time:asc">时间正序</button>
+          <button type="button" class="mi" data-sort="time:desc">时间倒序</button>
+        </div>
+        <button type="button" class="mi" id="aboutBtn" role="menuitem">关于</button>
       </div>
     </div>
-    <div class="actions">
-      <label class="toggle">
-        <input type="checkbox" id="hiddenToggle" />
-        <span>隐藏文件</span>
-      </label>
-      <button type="button" id="refreshBtn" class="btn" title="刷新当前目录">刷新</button>
-    </div>
   </header>
-
-  <nav class="crumbs" id="crumbs" aria-label="完整路径"></nav>
 
   <main class="layout">
     <aside class="panel side" id="sidePanel">
@@ -35,12 +48,8 @@
     </aside>
 
     <section class="panel main" id="mainPanel">
-      <div class="panel-head">
-        <h2 id="curTitle">正在加载…</h2>
-        <div class="meta-line" id="curMeta"></div>
-      </div>
       <div class="toolbar">
-        <button type="button" id="upBtn" class="btn">上级</button>
+        <span class="count-badge" id="countBadge">…</span>
         <button type="button" id="openSideBtn" class="btn ghost">目录树</button>
         <input id="searchInput" class="search" type="search" placeholder="筛选当前目录…" />
       </div>
@@ -51,11 +60,10 @@
               <th>名称</th>
               <th>大小</th>
               <th>修改时间</th>
-              <th>操作</th>
             </tr>
           </thead>
           <tbody id="fileBody">
-            <tr><td colspan="4" class="muted">加载中…</td></tr>
+            <tr><td colspan="3" class="muted">加载中…</td></tr>
           </tbody>
         </table>
       </div>
@@ -67,12 +75,37 @@
 
   <div class="toast" id="toast" hidden></div>
 
+  <div class="modal" id="aboutModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+      <h3 id="aboutTitle">关于 android lan file server</h3>
+      <p class="about-version">版本 {{ version }}</p>
+      <p class="about-repo">
+        仓库：
+        <a href="https://gitee.com/cuncaojin/android-lan-file-server" target="_blank" rel="noopener">Gitee</a>
+        <span class="sep">·</span>
+        <a href="https://github.com/cuncaojin/android-lan-file-server" target="_blank" rel="noopener">GitHub</a>
+      </p>
+      <p>局域网文件浏览器与在线预览服务：</p>
+      <ul>
+        <li>纯本地运行，文件不经过任何公网服务器</li>
+        <li>支持 PDF / Office / Markdown / 纯文本 / 图片 / 音视频在线预览</li>
+        <li>下载、原始文件、复制完整路径与文件名</li>
+        <li>无访问认证，请仅在可信局域网中使用</li>
+      </ul>
+      <p class="hint">根目录：<code>{{ root_path }}</code></p>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="aboutClose">关闭</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     window.__ANDROID_LAN__ = {
       rootName: {{ root_name|tojson }},
       rootPath: {{ root_path|tojson }},
       soffice: {{ soffice|tojson }},
       allowOutside: {{ allow_outside|tojson }},
+      version: {{ version|tojson }},
       startPath: {{ start_path|tojson }}
     };
   </script>

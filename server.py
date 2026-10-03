@@ -114,6 +114,8 @@ DEFAULT_HOST = _cfg("ANDROID_LAN_HOST", "ANDROID_LAN_HOST", "127.0.0.1")
 DEFAULT_PORT = int(_cfg("ANDROID_LAN_PORT", "ANDROID_LAN_PORT", "9523"))
 MAX_TEXT_BYTES = int(os.environ.get("ANDROID_LAN_MAX_TEXT", str(2 * 1024 * 1024)))
 MAX_LIST_ENTRIES = int(os.environ.get("ANDROID_LAN_MAX_LIST", "5000"))
+# 版本号单一来源：/healthz 与首页「关于」弹窗共用
+APP_VERSION = "1.1.0"
 SOFFICE = shutil.which("soffice") or shutil.which("libreoffice")
 
 app = Flask(
@@ -489,6 +491,7 @@ def index():
         root_path=str(ANDROID_LAN_ROOT),
         soffice=bool(SOFFICE),
         allow_outside=ALLOW_OUTSIDE_ROOT,
+        version=APP_VERSION,
         start_path=request.args.get("path", ""),
     )
 
@@ -619,6 +622,7 @@ def preview(rel: str):
             root_path=str(ANDROID_LAN_ROOT),
             soffice=bool(SOFFICE),
             allow_outside=ALLOW_OUTSIDE_ROOT,
+            version=APP_VERSION,
             start_path=rel,
         )
 
@@ -758,7 +762,7 @@ def healthz():
         "allow_outside_root": ALLOW_OUTSIDE_ROOT,
         "conf": str(CONF_PATH),
         "soffice": bool(SOFFICE),
-        "version": "1.1.0",
+        "version": APP_VERSION,
     }), 200 if ok else 503
 
 
