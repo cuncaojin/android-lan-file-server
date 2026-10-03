@@ -270,26 +270,31 @@
     });
   }
 
-  // 视图切换标签：文本（预览/原始文件）、Markdown（渲染/源码/原始文件）
-  function bindTabs() {
-    var tabs = document.querySelector(".view-tabs");
-    if (!tabs) return;
+  // 视图模式栏：左侧预览相关按钮（预览/渲染/源码），右侧原始文件（绿色按钮）
+  function bindModebar() {
+    var modebar = document.querySelector(".modebar");
+    if (!modebar) return;
     var rawFrame = document.getElementById("rawFrame");
     var textView = document.getElementById("textView");
-    var textToolbar = document.querySelector(".text-toolbar");
     var mdBody = document.getElementById("mdBody");
     var mdSource = document.getElementById("mdSource");
     var rawLoaded = false;
 
     function activate(view) {
-      var btns = tabs.querySelectorAll(".vt");
+      var btns = modebar.querySelectorAll("[data-view]");
       for (var i = 0; i < btns.length; i++) {
+        var v = btns[i].getAttribute("data-view");
         btns[i].classList.toggle(
-          "active",
-          btns[i].getAttribute("data-view") === view
+          "on",
+          btns[i].classList.contains("raw-btn")
+            ? v === "raw" && view === "raw"
+            : v === view
         );
       }
       var isRaw = view === "raw";
+      // 预览专属控件（工具组/截断提示）在原始文件视图下隐藏
+      var ops = modebar.querySelectorAll(".text-ops, .mb-hint");
+      for (var j = 0; j < ops.length; j++) ops[j].hidden = isRaw;
       if (rawFrame) {
         rawFrame.hidden = !isRaw;
         if (isRaw && !rawLoaded) {
@@ -297,21 +302,64 @@
           rawLoaded = true;
         }
       }
-      if (textView) {
-        textView.hidden = isRaw;
-        if (textToolbar) textToolbar.hidden = isRaw;
-      }
+      if (textView) textView.hidden = isRaw;
       if (mdBody) {
         mdBody.hidden = isRaw || view === "source";
         if (mdSource) mdSource.hidden = isRaw || view === "render";
       }
     }
 
-    tabs.addEventListener("click", function (e) {
+    modebar.addEventListener("click", function (e) {
       if (!e.target.closest) return;
-      var b = e.target.closest(".vt");
+      var b = e.target.closest("[data-view]");
       if (b) activate(b.getAttribute("data-view"));
     });
+  }
+
+  // Android 式工具栏：下滚隐藏（内容跟随滑出），上滚再显示
+  function bindToolbarAutohide() {
+    var bar = document.getElementById("topbar");
+    if (!bar) return;
+    var lastY = window.scrollY || 0;
+    var down = 0;
+    var up = 0;
+
+    function closeMenu() {
+      var menu = document.getElementById("moreMenu");
+      var btn = document.getElementById("moreBtn");
+      if (menu && !menu.hidden) {
+        menu.hidden = true;
+        if (btn) btn.setAttribute("aria-expanded", "false");
+      }
+    }
+
+    window.addEventListener(
+      "scroll",
+      function () {
+        var y = window.scrollY || document.documentElement.scrollTop || 0;
+        var dy = y - lastY;
+        lastY = y;
+        if (y <= 4) {
+          bar.classList.remove("tb-hidden");
+          down = 0;
+          up = 0;
+          return;
+        }
+        if (dy > 0) {
+          down += dy;
+          up = 0;
+          if (down > 24 && !bar.classList.contains("tb-hidden")) {
+            closeMenu();
+            bar.classList.add("tb-hidden");
+          }
+        } else if (dy < 0) {
+          up -= dy;
+          down = 0;
+          if (up > 8) bar.classList.remove("tb-hidden");
+        }
+      },
+      { passive: true }
+    );
   }
 
   function bindMediaErrors() {
@@ -438,7 +486,8 @@
     }
   }
 
-  // ---- 同目录可预览文件：左右滑动切换（到头即止，不循环） ----
+  // ---- 同目录可预览文件：双指左右滑动切换（到头即止，不循环）----
+  // 单指横滑不切换，改为弹提示教用户改用双指（防内容横滑/缩放平移误触）
   function encodePath(p) {
     return String(p || "")
       .split("/")
@@ -476,16 +525,26 @@
     var parent = meta.parent || "";
     var seq = [];
     var idx = -1;
+    // 双指手势状态：起始/最新双指中点与间距
+    var active = false;
     var sx = 0;
     var sy = 0;
-    var active = false;
+    var lx = 0;
+    var ly = 0;
+    var dist0 = 0;
+    var distL = 0;
+    // 单指手势（仅用于弹提示，不切换文件）
+    var single = false;
+    var ssx = 0;
+    var ssy = 0;
+    var singleTarget = null;
     var hScroll0 = null;
 
     // 触点落在交互控件或媒体控制区时，不当作切换手势
     function skipStart(t, y) {
       if (!t || !t.closest) return true;
       if (t.closest("a, button, input, textarea, select, audio")) return true;
-      if (t.closest(".actions, .text-toolbar, .view-tabs")) return true;
+      if (t.closest(".modebar, .more-menu, .actions")) return true;
       if (t.tagName === "VIDEO") {
         var r = t.getBoundingClientRect();
         if (y > r.bottom - 64) return true; // 底部控制条（进度条拖动）区域
@@ -512,6 +571,51 @@
       return false;
     }
 
+    function selectionActive() {
+      try {
+        var sel = window.getSelection();
+        return !!(sel && !sel.isCollapsed && String(sel).length);
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function midOf(t0, t1) {
+      return [
+        (t0.clientX + t1.clientX) / 2,
+        (t0.clientY + t1.clientY) / 2
+      ];
+    }
+    function distOf(t0, t1) {
+      var dx = t0.clientX - t1.clientX;
+      var dy = t0.clientY - t1.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // 双指横滑判定并切换（间距剧变=捏合缩放，取消）
+    function tryTwoFingerSwitch() {
+      if (Math.abs(distL - dist0) > 30) return; // 缩放手势，不是切换
+      var dx = lx - sx;
+      var dy = ly - sy;
+      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+      if (hScrollConsumed()) return; // 手势在滚动内容上：让位
+      if (selectionActive()) return;
+      var next = idx + (dx < 0 ? 1 : -1); // 左滑下一个，右滑上一个
+      if (next < 0) {
+        showToast("已经是第一个文件", 1500); // 不循环：到头停住并提示
+        return;
+      }
+      if (next >= seq.length) {
+        showToast("已经是最后一个文件", 1500);
+        return;
+      }
+      var f = seq[next];
+      location.href =
+        "/preview/" +
+        encodePath(f.path) +
+        (f.kind ? "?kind=" + encodeURIComponent(f.kind) : "");
+    }
+
     function attach(files) {
       seq = files;
       idx = -1;
@@ -526,18 +630,54 @@
       document.addEventListener(
         "touchstart",
         function (e) {
-          if (!e.touches || e.touches.length !== 1) {
+          if (!e.touches || !e.touches.length) return;
+          var n = e.touches.length;
+          if (n === 1) {
             active = false;
+            if (skipStart(e.target, e.touches[0].clientY)) {
+              single = false;
+              singleTarget = null;
+              return;
+            }
+            single = true;
+            singleTarget = e.target;
+            ssx = e.touches[0].clientX;
+            ssy = e.touches[0].clientY;
+            hScrollMark(e.target);
             return;
           }
-          if (skipStart(e.target, e.touches[0].clientY)) {
-            active = false;
+          if (n === 2) {
+            single = false; // 第二根手指落下：单指流程作废
+            if (
+              skipStart(e.target, e.touches[0].clientY) ||
+              (singleTarget &&
+                skipStart(singleTarget, e.touches[0].clientY))
+            ) {
+              active = false;
+              return;
+            }
+            var m = midOf(e.touches[0], e.touches[1]);
+            sx = lx = m[0];
+            sy = ly = m[1];
+            dist0 = distL = distOf(e.touches[0], e.touches[1]);
+            hScrollMark(e.target);
+            active = true;
             return;
           }
-          active = true;
-          sx = e.touches[0].clientX;
-          sy = e.touches[0].clientY;
-          hScrollMark(e.target);
+          active = false;
+          single = false;
+        },
+        { passive: true }
+      );
+      document.addEventListener(
+        "touchmove",
+        function (e) {
+          if (active && e.touches && e.touches.length >= 2) {
+            var m = midOf(e.touches[0], e.touches[1]);
+            lx = m[0];
+            ly = m[1];
+            distL = distOf(e.touches[0], e.touches[1]);
+          }
         },
         { passive: true }
       );
@@ -545,37 +685,33 @@
         "touchcancel",
         function () {
           active = false;
+          single = false;
         },
         { passive: true }
       );
       document.addEventListener(
         "touchend",
         function (e) {
-          if (!active || !e.changedTouches || !e.changedTouches.length) return;
-          active = false;
-          var dx = e.changedTouches[0].clientX - sx;
-          var dy = e.changedTouches[0].clientY - sy;
-          // 横向主导 + 足够位移，避免与竖向滚动手势打架
-          if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
-          if (hScrollConsumed()) return; // 手势在滚动内容上：让位给横向滚动
-          try {
-            var sel = window.getSelection();
-            if (sel && !sel.isCollapsed && String(sel).length) return; // 文本选择中
-          } catch (err) {}
-          var next = idx + (dx < 0 ? 1 : -1); // 左滑下一个，右滑上一个
-          if (next < 0) {
-            showToast("已经是第一个文件", 1500); // 不循环：到头停住并提示
+          if (active) {
+            active = false;
+            tryTwoFingerSwitch();
             return;
           }
-          if (next >= seq.length) {
-            showToast("已经是最后一个文件", 1500);
-            return;
+          if (
+            single &&
+            e.touches &&
+            e.touches.length === 0 &&
+            e.changedTouches &&
+            e.changedTouches.length
+          ) {
+            single = false;
+            var dx = e.changedTouches[0].clientX - ssx;
+            var dy = e.changedTouches[0].clientY - ssy;
+            if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+            if (hScrollConsumed()) return;
+            if (selectionActive()) return;
+            showToast("请用双指左右滑动切换文件", 2200); // 把失败手势变成教学时机
           }
-          var f = seq[next];
-          location.href =
-            "/preview/" +
-            encodePath(f.path) +
-            (f.kind ? "?kind=" + encodeURIComponent(f.kind) : "");
         },
         { passive: true }
       );
@@ -583,7 +719,7 @@
       // 手势可用时给一次性提示（每会话只提示一次，不常驻打扰）
       try {
         if (!sessionStorage.getItem("alfs-swipe-hinted")) {
-          showToast("左右滑动可切换上一个/下一个文件", 2600);
+          showToast("双指左右滑动可切换上一个/下一个文件", 2600);
           sessionStorage.setItem("alfs-swipe-hinted", "1");
         }
       } catch (e) {}
@@ -639,7 +775,8 @@
   bindText();
   bindPdfJs();
   bindMoreMenu();
-  bindTabs();
+  bindModebar();
+  bindToolbarAutohide();
   bindMediaErrors();
   bindSwipe();
 })();

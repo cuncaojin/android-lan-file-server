@@ -70,9 +70,9 @@ A **LAN file server** running on an **Android phone (Termux Ubuntu subsystem)**:
 
 Every file type also offers **Preview** / **Download** / **Raw link**.
 
-Previewable files in the same directory can be switched by **swiping left/right** on the preview page: swipe left for the next file, right for the previous one, stopping at the first/last file (**no wrap-around**; swiping further shows an "already at the first/last file" toast); gestures used for horizontal text scrolling, video seeking, or text selection are unaffected.
+Previewable files in the same directory can be switched by **two-finger horizontal swipe** on the preview page: swipe left for the next file, right for the previous one, stopping at the first/last file (**no wrap-around**; swiping further shows an "already at the first/last file" toast). A single-finger horizontal swipe never switches files — it shows a toast prompting you to use two fingers instead (preventing accidental switches while panning text or moving zoomed content). The top bar behaves like an Android toolbar: **it hides on scroll-down and reappears on scroll-up**.
 
-The `⋮` menu in the preview top bar offers **copy path / download / raw file**; **long-pressing or double-clicking the file name** opens the same menu. Plain text files provide a "Preview / Raw file" view switcher and Markdown provides "Render / Source / Raw file" tabs — the raw file is viewed in place without leaving the page.
+The `⋮` menu in the preview top bar offers **copy path / download / raw file**; **long-pressing or double-clicking the file name** opens the same menu. The mode bar is split left/right: the **left side** holds preview-related controls (format/wrap/line numbers/font size for plain text, render/source for Markdown; buttons wrap onto multiple lines when space runs out), while the **green-bordered button on the right** is "Raw file", viewed in place — the two viewing modes are instantly distinguishable.
 
 ### 1.3 Service characteristics
 - Listens on `0.0.0.0` by default, **reachable from both the phone and the LAN**; changing it back to `127.0.0.1` restricts access to the phone itself

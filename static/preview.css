@@ -82,43 +82,72 @@
 .ppt-text ul { margin: 0; padding-left: 18px; }
 .ppt-text li { margin: 4px 0; }
 
-/* 视图切换标签（预览/原始文件、渲染/源码/原始文件） */
-.view-tabs {
+/* ---- 预览页顶栏：nav-row（返回/文件名/⋮）+ modebar（视图模式栏）合为一个 sticky 单元 ---- */
+.preview-page .topbar {
+  display: block;
+  padding: 0;
+  transition: transform 0.22s ease;
+}
+/* 下滚隐藏、上滚显示（Android toolbar 行为） */
+.preview-page .topbar.tb-hidden { transform: translateY(-100%); }
+.preview-page .nav-row {
   display: flex;
-  gap: 8px;
   align-items: center;
-  padding: 12px 0 0;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
 }
-.view-tabs .vt {
-  padding: 7px 16px;
-  font-size: 14px;
-  font-weight: 600;
+/* 兜底：即使布局异常也裁剪，标题永不压住右侧按钮 */
+.preview-page .brand { overflow: hidden; }
+
+/* ---- modebar：左侧=预览相关控件（可折行），右侧=原始文件（绿色边框） ---- */
+.modebar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
 }
-.view-tabs .vt.active {
+.modebar .mb-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.modebar .text-ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.modebar .btn {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.modebar .mb-hint {
+  font-size: 12px;
+}
+/* 右侧原始文件按钮：列表页可预览按钮同款绿色边框，激活时绿色填充 */
+.modebar .raw-btn {
+  flex: none;
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}
+.modebar .raw-btn.on {
+  background: var(--accent-2);
+  border-color: transparent;
+  color: #fff;
+}
+/* 左侧模式按钮（预览/渲染/源码）激活态 */
+.modebar .mode.on {
   background: var(--accent);
   border-color: transparent;
   color: #fff;
 }
-
-/* 文本工具栏：普通一行，不做成卡片 */
-.text-toolbar {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  padding: 8px 0;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-.text-toolbar::-webkit-scrollbar { display: none; }
-/* 工具栏提示（仅截断时出现）：纯文字、不换行 */
-.text-toolbar .hint {
-  flex: none;
-  white-space: nowrap;
-  font-size: 12px;
-}
-.text-toolbar[hidden] { display: none; }
+.modebar[hidden] { display: none; }
 
 .markdown-body,
 .md-source,
@@ -128,7 +157,7 @@
   border-radius: 12px;
   padding: 18px;
   overflow: auto;
-  max-height: calc(100vh - 160px);
+  /* 不设 max-height：内容撑高、整页滚动，顶栏才能随滚动隐藏/显示 */
 }
 /* 长行/长串（URL、无空格英文等）强制折行，避免横向溢出 */
 .markdown-body {
@@ -155,22 +184,7 @@
   word-break: break-word;
 }
 
-/* 文本工具栏按钮组：单行不换行，放不下时由外层 .text-toolbar 横向滚动 */
-.text-ops {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
-  align-items: center;
-  flex: none;
-}
-
-/* 工具栏按钮紧凑化，减少纵向浪费 */
-.text-toolbar .btn,
-.md-toolbar .btn {
-  padding: 6px 10px;
-  font-size: 13px;
-}
-
+/* 行为开关按钮激活态 */
 .btn.toggle.on {
   border-color: var(--accent);
   color: var(--accent);
@@ -297,7 +311,7 @@
 .raw-frame {
   display: block;
   width: 100%;
-  height: calc(100vh - 175px);
+  height: calc(100vh - 116px);
   min-height: 300px;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -371,7 +385,8 @@
 
 /* 移动端：内容全宽（贴边），不浪费左右边距 */
 @media (max-width: 640px) {
-  .preview-page .topbar { padding: 10px 12px; }
+  .preview-page .nav-row { padding: 8px 12px; }
+  .preview-page .modebar { padding: 8px 12px; }
   .preview-page .preview-main { padding: 0; }
 
   /* 内容卡片贴边：去掉左右边框与圆角，横向由各行自带留白 */
@@ -392,10 +407,4 @@
   .preview-page .markdown-body,
   .preview-page .md-source,
   .preview-page .text-view { padding: 12px; }
-
-  .preview-page .view-tabs,
-  .preview-page .text-toolbar {
-    padding-left: 12px;
-    padding-right: 12px;
-  }
 }

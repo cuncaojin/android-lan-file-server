@@ -9,20 +9,47 @@
   <link rel="stylesheet" href="/static/preview.css" />
 </head>
 <body class="preview-page">
-  <header class="topbar sticky">
-    <div class="brand compact">
-      <a class="back" href="/" id="backHome">返回</a>
-      <div>
-        <div class="title truncate" title="{{ meta.name }}">{{ meta.name }}</div>
-        <div class="subtitle">
-          {{ meta.kind }} · {{ meta.size_h }}
-          {% if meta.mtime_h %} · {{ meta.mtime_h }}{% endif %}
+  <header class="topbar sticky" id="topbar">
+    <div class="nav-row">
+      <div class="brand compact">
+        <a class="back" href="/" id="backHome">返回</a>
+        <div>
+          <div class="title truncate" title="{{ meta.name }}">{{ meta.name }}</div>
+          <div class="subtitle">
+            {{ meta.kind }} · {{ meta.size_h }}
+            {% if meta.mtime_h %} · {{ meta.mtime_h }}{% endif %}
+          </div>
         </div>
       </div>
+      <div class="actions">
+        <button type="button" class="btn icon" id="moreBtn" aria-haspopup="menu" aria-expanded="false" title="更多操作（长按或双击文件名也可打开）">⋮</button>
+      </div>
     </div>
-    <div class="actions">
-      <button type="button" class="btn icon" id="moreBtn" aria-haspopup="menu" aria-expanded="false" title="更多操作（长按或双击文件名也可打开）">⋮</button>
+    {% if meta.kind == "text" %}
+    <div class="modebar">
+      <div class="mb-left">
+        <button type="button" class="btn mode on" data-view="preview">预览</button>
+        {% if meta.content and meta.content|length >= 2000000 %}<span class="hint mb-hint">已截断，仅显示前 2MB</span>{% endif %}
+        <div class="text-ops">
+          <button type="button" class="btn toggle" id="btnFormat" hidden>格式化</button>
+          <button type="button" class="btn toggle" id="btnWrap" title="长行是否自动换行">换行</button>
+          <button type="button" class="btn toggle" id="btnLines" title="显示/隐藏行号">行号</button>
+          <button type="button" class="btn" id="btnZoomOut" title="缩小字号">A−</button>
+          <button type="button" class="btn ghost" id="btnZoomLabel" title="点击恢复默认字号">13px</button>
+          <button type="button" class="btn" id="btnZoomIn" title="放大字号">A+</button>
+        </div>
+      </div>
+      <button type="button" class="btn raw-btn" data-view="raw">原始文件</button>
     </div>
+    {% elif meta.kind == "markdown" %}
+    <div class="modebar">
+      <div class="mb-left">
+        <button type="button" class="btn mode on" data-view="render">渲染</button>
+        <button type="button" class="btn mode" data-view="source">源码</button>
+      </div>
+      <button type="button" class="btn raw-btn" data-view="raw">原始文件</button>
+    </div>
+    {% endif %}
     <div class="more-menu" id="moreMenu" role="menu" hidden>
       <button type="button" class="mi" id="miCopy" role="menuitem">复制路径</button>
       <a class="mi" id="miDownload" role="menuitem" href="{{ meta.download_url }}" download>下载</a>
@@ -82,32 +109,12 @@
       {% endif %}
 
     {% elif meta.kind == "markdown" %}
-      <div class="view-tabs" id="mdTabs">
-        <button type="button" class="btn vt active" data-view="render">渲染</button>
-        <button type="button" class="btn vt" data-view="source">源码</button>
-        <button type="button" class="btn vt" data-view="raw">原始文件</button>
-      </div>
       <article class="markdown-body" id="mdBody"></article>
       <pre class="md-source" id="mdSource" hidden></pre>
       <iframe class="raw-frame" id="rawFrame" data-src="{{ meta.raw_url }}" sandbox="" title="原始文件" hidden></iframe>
       <script type="application/json" id="mdPayload">{{ meta.content|tojson }}</script>
 
     {% elif meta.kind == "text" %}
-      <div class="view-tabs">
-        <button type="button" class="btn vt active" data-view="preview">预览</button>
-        <button type="button" class="btn vt" data-view="raw">原始文件</button>
-      </div>
-      <div class="text-toolbar">
-        {% if meta.content and meta.content|length >= 2000000 %}<span class="hint">已截断，仅显示前 2MB</span>{% endif %}
-        <div class="text-ops">
-          <button type="button" class="btn toggle" id="btnFormat" hidden>格式化</button>
-          <button type="button" class="btn toggle" id="btnWrap" title="长行是否自动换行">换行</button>
-          <button type="button" class="btn toggle" id="btnLines" title="显示/隐藏行号">行号</button>
-          <button type="button" class="btn" id="btnZoomOut" title="缩小字号">A−</button>
-          <button type="button" class="btn ghost" id="btnZoomLabel" title="点击恢复默认字号">13px</button>
-          <button type="button" class="btn" id="btnZoomIn" title="放大字号">A+</button>
-        </div>
-      </div>
       <pre class="text-view" id="textView"></pre>
       <iframe class="raw-frame" id="rawFrame" data-src="{{ meta.raw_url }}" sandbox="" title="原始文件" hidden></iframe>
       <script type="application/json" id="textPayload">{{ meta.content|tojson }}</script>

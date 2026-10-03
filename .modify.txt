@@ -1,10 +1,18 @@
 # 修改记录（完整路径，按时间追加）
 2026-10-02
 /sdcard/cuncaojin/work/gitee/android-lan-file-server/static/preview.js
-/sdcard/cuncaojin/work/gitee/android-lan-file-server/static/app.js
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/static/preview.css
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/templates/preview.html
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/README.md
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/README.en.md
+2026-10-03
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/templates/preview.html
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/static/preview.js
 /sdcard/cuncaojin/work/gitee/android-lan-file-server/static/preview.css
 /sdcard/cuncaojin/work/gitee/android-lan-file-server/README.md
 /sdcard/cuncaojin/work/gitee/android-lan-file-server/README.en.md
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/AGENTS.md
+
 2026-10-02
 /sdcard/cuncaojin/work/gitee/android-lan-file-server/AGENTS.md
 /sdcard/cuncaojin/work/gitee/android-lan-file-server/.gitignore
