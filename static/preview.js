@@ -223,8 +223,10 @@
     } catch (e) {}
   }
 
-  window.addEventListener("popstate", function (e) {
-    if (!(e.state && e.state.alfsOverlay)) return;
+  // 唯一 popstate 入口：不能看 event.state（那是回退"到达"的记录，不含浮层
+  // 标记）；只要浮层还开着，这次返回就是关浮层——不跳页（Android 返回第一下）。
+  // 主动关闭时 overlayDismiss 自己 back，此时 activeOverlay 已清空，进来即返回。
+  window.addEventListener("popstate", function () {
     if (!activeOverlay) return;
     var fn = activeOverlay;
     activeOverlay = null;

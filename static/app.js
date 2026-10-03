@@ -147,13 +147,14 @@
     }
   }
 
-  // ── 返回键优先关闭浮层（⋮ 菜单 / 关于弹窗 / 目录树面板） ──
-  // 打开浮层时压入一条记录；手机返回键先收起浮层而不是离开页面；
-  // 点外/点选项/关闭按钮主动收起时回退该记录，保持历史栈干净。
+  // ── 返回键优先关闭浮层（⋮ 菜单 / 关于弹窗 / 目录树面板），仿 Android ──
+  // 打开时压入一条记录；按返回键 = 关浮层且不跳页（那次 back 只消耗浮层记录）；
+  // 主动关闭（点外/Esc/点选/关闭按钮）时自行 back，并抑制其 popstate 避免误导航。
   var activeOverlay = null; // {close: fn}
+  var popSuppress = false; // 主动 back 产生的下一次 popstate 不做导航
 
   function overlayOpen(closeFn) {
-    if (activeOverlay) overlayDismiss();
+    // 旧浮层 UI 由调用方先收；history 记录复用（已有则 replace，不叠加）
     activeOverlay = closeFn;
     try {
       if (history.state && history.state.alfsOverlay) {
@@ -164,33 +165,34 @@
     } catch (e) {}
   }
 
-  // 菜单项跳到另一浮层（如「关于」）：复用同一条记录，避免回退/压栈竞态
-  function overlaySwap(closeFn) {
-    activeOverlay = closeFn;
-    try {
-      history.replaceState({ alfsOverlay: 1 }, "");
-    } catch (e) {}
-  }
-
   function overlayDismiss() {
     if (!activeOverlay) return;
     var fn = activeOverlay;
     activeOverlay = null;
     fn();
     try {
-      if (history.state && history.state.alfsOverlay) history.back();
+      if (history.state && history.state.alfsOverlay) {
+        popSuppress = true;
+        history.back();
+      }
     } catch (e) {}
   }
 
+  // 唯一的 popstate 出口：浮层开着 = 这次返回用于关浮层（绝不触发导航）；
+  // 主动关闭的回调被 suppress 吞掉；其余才是目录导航返回。
   window.addEventListener("popstate", function (e) {
-    // 浮层记录：返回键已把它退掉，这里只负责收起界面（不参与目录导航）
-    if (e.state && e.state.alfsOverlay) {
-      if (activeOverlay) {
-        var fn = activeOverlay;
-        activeOverlay = null;
-        fn();
-      }
+    if (activeOverlay) {
+      var fn = activeOverlay;
+      activeOverlay = null;
+      fn();
+      return;
     }
+    if (popSuppress) {
+      popSuppress = false;
+      return;
+    }
+    var path = (e.state && e.state.path) || "";
+    load(path, { push: false });
   });
 
   async function fetchLs(path) {
@@ -508,6 +510,8 @@
   });
   els.openSideBtn.addEventListener("click", function () {
     if (els.sidePanel.classList.contains("open")) return;
+    // 菜单若开着：只收 UI，history 记录复用给面板（open 里会 replace）
+    if (els.moreMenu && !els.moreMenu.hidden) closeMenu();
     els.sidePanel.classList.add("open");
     overlayOpen(function () {
       els.sidePanel.classList.remove("open");
@@ -640,9 +644,9 @@
       els.aboutModal.hidden = true;
     };
     els.aboutBtn.addEventListener("click", function () {
-      closeMenu(); // 菜单 UI 收起，history 记录由 overlaySwap 复用给关于弹窗
+      closeMenu(); // 菜单 UI 收起，history 记录由 overlayOpen 复用给关于弹窗
       els.aboutModal.hidden = false;
-      overlaySwap(closeAbout);
+      overlayOpen(closeAbout);
     });
     if (els.aboutClose) {
       els.aboutClose.addEventListener("click", overlayDismiss);
@@ -655,12 +659,6 @@
       if (e.key === "Escape") overlayDismiss();
     });
   }
-
-  window.addEventListener("popstate", function (e) {
-    if (e.state && e.state.alfsOverlay) return; // 浮层记录不参与目录导航
-    var path = (e.state && e.state.path) || "";
-    load(path, { push: false });
-  });
 
   // 触摸设备（手机/平板）用下拉刷新替代刷新按钮；桌面保留按钮
   function bindPullRefresh() {
