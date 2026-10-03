@@ -412,9 +412,13 @@
     }
   }
 
-  // 单击条目即打开（目录进文件夹、文件进预览）
+  // 单击条目整行即打开（点击落在名称之外时取行内链接）
   els.fileBody.addEventListener("click", function (e) {
     var a = e.target.closest("a[data-path]");
+    if (!a) {
+      var tr = e.target.closest("tr");
+      if (tr) a = tr.querySelector("a[data-path]");
+    }
     if (!a) return;
     e.preventDefault();
     openEntry(a);

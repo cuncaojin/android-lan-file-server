@@ -477,6 +477,8 @@ a:hover { text-decoration: underline; }
 .file-table tr:hover {
   background: rgba(59, 130, 246, 0.06);
 }
+/* 整行可点，给出指针反馈 */
+.file-table tbody tr { cursor: pointer; }
 .name-cell {
   display: flex;
   align-items: flex-start;
