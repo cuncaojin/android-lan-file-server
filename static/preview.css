@@ -58,8 +58,6 @@
 }
 
 .ppt-text .slide,
-.md-toolbar,
-.text-toolbar,
 .media-stage,
 .image-stage,
 .fallback {
@@ -84,23 +82,43 @@
 .ppt-text ul { margin: 0; padding-left: 18px; }
 .ppt-text li { margin: 4px 0; }
 
-.md-toolbar,
+/* 视图切换标签（预览/原始文件、渲染/源码/原始文件） */
+.view-tabs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 0 0;
+}
+.view-tabs .vt {
+  padding: 7px 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.view-tabs .vt.active {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* 文本工具栏：普通一行，不做成卡片 */
 .text-toolbar {
   display: flex;
   gap: 6px;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px;
-  margin-bottom: 10px;
-  border-bottom: 0;
-  min-width: 0;
+  padding: 8px 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+.text-toolbar::-webkit-scrollbar { display: none; }
 /* 工具栏提示（仅截断时出现）：纯文字、不换行 */
 .text-toolbar .hint {
   flex: none;
   white-space: nowrap;
   font-size: 12px;
 }
+.text-toolbar[hidden] { display: none; }
 
 .markdown-body,
 .md-source,
@@ -111,6 +129,14 @@
   padding: 18px;
   overflow: auto;
   max-height: calc(100vh - 160px);
+}
+/* 长行/长串（URL、无空格英文等）强制折行，避免横向溢出 */
+.markdown-body {
+  overflow-wrap: anywhere;
+}
+.markdown-body pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .md-source {
   font-family: var(--mono);
@@ -129,18 +155,14 @@
   word-break: break-word;
 }
 
-/* 文本工具栏按钮组：单行不换行，放不下时横向滚动（隐藏滚动条） */
+/* 文本工具栏按钮组：单行不换行，放不下时由外层 .text-toolbar 横向滚动 */
 .text-ops {
   display: flex;
   flex-wrap: nowrap;
   gap: 6px;
   align-items: center;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+  flex: none;
 }
-.text-ops::-webkit-scrollbar { display: none; }
 
 /* 工具栏按钮紧凑化，减少纵向浪费 */
 .text-toolbar .btn,
@@ -271,6 +293,65 @@
 }
 .fallback p { margin: 0; }
 
+/* 原始文件视图（沙箱 iframe 内嵌展示） */
+.raw-frame {
+  display: block;
+  width: 100%;
+  height: calc(100vh - 175px);
+  min-height: 300px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-elev);
+}
+.raw-frame[hidden] { display: none; }
+
+/* 顶栏 ⋮ 图标按钮 + 下拉菜单（菜单相对 sticky 顶栏定位） */
+.btn.icon {
+  padding: 6px 12px;
+  font-size: 18px;
+  line-height: 1;
+}
+.more-menu {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 8px;
+  z-index: 30;
+  min-width: 168px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+.more-menu[hidden] { display: none; }
+.mi {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  padding: 11px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.mi:hover { background: var(--bg-soft); }
+
+/* 文件名：提供长按/双击手势，禁用文本选择避免误触 */
+.preview-page .topbar .title {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+/* 右侧仅剩一个 ⋮ 按钮，标题不再受 vw 上限约束 */
+.preview-page .topbar .title,
+.preview-page .topbar .subtitle { max-width: none; }
+
 .swipe-toast {
   position: fixed;
   left: 50%;
@@ -288,28 +369,33 @@
 }
 .swipe-toast.show { opacity: 1; }
 
-/* 移动端顶栏：两行布局，彻底避免按钮与标题重叠、"返回"竖排 */
+/* 移动端：内容全宽（贴边），不浪费左右边距 */
 @media (max-width: 640px) {
-  .preview-page .topbar {
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 10px 12px;
+  .preview-page .topbar { padding: 10px 12px; }
+  .preview-page .preview-main { padding: 0; }
+
+  /* 内容卡片贴边：去掉左右边框与圆角，横向由各行自带留白 */
+  .preview-page .markdown-body,
+  .preview-page .md-source,
+  .preview-page .text-view,
+  .preview-page .raw-frame,
+  .preview-page .pdf-shell,
+  .preview-page .ppt-shell,
+  .preview-page .ppt-text,
+  .preview-page .media-stage,
+  .preview-page .image-stage,
+  .preview-page .fallback {
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
   }
-  .preview-page .topbar .brand { width: 100%; }
-  /* 已占满整行，解除 vw 上限，让长文件名多显示一些 */
-  .preview-page .topbar .title,
-  .preview-page .topbar .subtitle { max-width: none; }
-  .preview-page .topbar .actions {
-    width: 100%;
-    justify-content: flex-start;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  .preview-page .topbar .actions::-webkit-scrollbar { display: none; }
-  .preview-page .topbar .actions .btn {
-    padding: 6px 12px;
-    font-size: 13px;
+  .preview-page .markdown-body,
+  .preview-page .md-source,
+  .preview-page .text-view { padding: 12px; }
+
+  .preview-page .view-tabs,
+  .preview-page .text-toolbar {
+    padding-left: 12px;
+    padding-right: 12px;
   }
 }

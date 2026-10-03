@@ -6,7 +6,6 @@
   function bindMarkdown() {
     var body = document.getElementById("mdBody");
     var source = document.getElementById("mdSource");
-    var toggle = document.getElementById("mdToggle");
     var payload = document.getElementById("mdPayload");
     if (!body || !payload) return;
 
@@ -26,16 +25,6 @@
       : escapeHtml(raw);
     if (source) {
       source.textContent = raw;
-    }
-
-    if (toggle && source) {
-      var showingSource = false;
-      toggle.addEventListener("click", function () {
-        showingSource = !showingSource;
-        body.hidden = showingSource;
-        source.hidden = !showingSource;
-        toggle.textContent = showingSource ? "切换渲染" : "切换源码";
-      });
     }
   }
 
@@ -122,11 +111,11 @@
       if (btnWrap) btnWrap.classList.toggle("on", st.wrap);
       if (btnLines) btnLines.classList.toggle("on", st.lines);
       if (btnZoomLabel) btnZoomLabel.textContent = st.size + "px";
-      if (btnFormat) {
-        btnFormat.hidden = !jsonOk;
-        btnFormat.textContent = showPretty ? "查看源码" : "格式化";
-        btnFormat.classList.toggle("on", showPretty);
-      }
+        if (btnFormat) {
+          btnFormat.hidden = !jsonOk;
+          btnFormat.textContent = showPretty ? "取消格式化" : "格式化";
+          btnFormat.classList.toggle("on", showPretty);
+        }
     }
     function setZoom(next) {
       st.size = Math.min(28, Math.max(10, next));
@@ -209,22 +198,119 @@
     });
   }
 
-  function bindCopyPath() {
-    var btn = document.getElementById("copyPathBtn");
-    if (!btn || !meta.full_path) return;
-    btn.addEventListener("click", function () {
-      copyText(meta.full_path).then(
+  // 顶栏 ⋮ 菜单：复制路径 / 下载 / 原始文件；长按或双击文件名也可打开
+  function bindMoreMenu() {
+    var btn = document.getElementById("moreBtn");
+    var menu = document.getElementById("moreMenu");
+    if (!btn || !menu) return;
+    var title = document.querySelector(".topbar .title");
+
+    function open() {
+      menu.hidden = false;
+      btn.setAttribute("aria-expanded", "true");
+    }
+    function close() {
+      menu.hidden = true;
+      btn.setAttribute("aria-expanded", "false");
+    }
+
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (menu.hidden) open();
+      else close();
+    });
+    document.addEventListener("click", function (e) {
+      if (menu.hidden) return;
+      if (!e.target.closest) return;
+      if (e.target.closest("#moreMenu") || e.target.closest("#moreBtn")) return;
+      close();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") close();
+    });
+
+    if (title) {
+      var lpTimer = 0;
+      title.addEventListener(
+        "touchstart",
         function () {
-          var old = btn.textContent;
-          btn.textContent = "已复制";
-          setTimeout(function () {
-            btn.textContent = old;
-          }, 1500);
+          lpTimer = setTimeout(open, 500);
         },
-        function () {
-          window.prompt("自动复制失败，长按手动复制：", meta.full_path);
-        }
+        { passive: true }
       );
+      ["touchend", "touchmove", "touchcancel"].forEach(function (ev) {
+        title.addEventListener(
+          ev,
+          function () {
+            clearTimeout(lpTimer);
+          },
+          { passive: true }
+        );
+      });
+      title.addEventListener("dblclick", open);
+    }
+
+    var copy = document.getElementById("miCopy");
+    if (copy && meta.full_path) {
+      copy.addEventListener("click", function () {
+        close();
+        copyText(meta.full_path).then(
+          function () {
+            showToast("路径已复制", 1500);
+          },
+          function () {
+            window.prompt("自动复制失败，长按手动复制：", meta.full_path);
+          }
+        );
+      });
+    }
+    ["miDownload", "miRaw"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener("click", close);
+    });
+  }
+
+  // 视图切换标签：文本（预览/原始文件）、Markdown（渲染/源码/原始文件）
+  function bindTabs() {
+    var tabs = document.querySelector(".view-tabs");
+    if (!tabs) return;
+    var rawFrame = document.getElementById("rawFrame");
+    var textView = document.getElementById("textView");
+    var textToolbar = document.querySelector(".text-toolbar");
+    var mdBody = document.getElementById("mdBody");
+    var mdSource = document.getElementById("mdSource");
+    var rawLoaded = false;
+
+    function activate(view) {
+      var btns = tabs.querySelectorAll(".vt");
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle(
+          "active",
+          btns[i].getAttribute("data-view") === view
+        );
+      }
+      var isRaw = view === "raw";
+      if (rawFrame) {
+        rawFrame.hidden = !isRaw;
+        if (isRaw && !rawLoaded) {
+          rawFrame.src = rawFrame.getAttribute("data-src") || "";
+          rawLoaded = true;
+        }
+      }
+      if (textView) {
+        textView.hidden = isRaw;
+        if (textToolbar) textToolbar.hidden = isRaw;
+      }
+      if (mdBody) {
+        mdBody.hidden = isRaw || view === "source";
+        if (mdSource) mdSource.hidden = isRaw || view === "render";
+      }
+    }
+
+    tabs.addEventListener("click", function (e) {
+      if (!e.target.closest) return;
+      var b = e.target.closest(".vt");
+      if (b) activate(b.getAttribute("data-view"));
     });
   }
 
@@ -399,7 +485,7 @@
     function skipStart(t, y) {
       if (!t || !t.closest) return true;
       if (t.closest("a, button, input, textarea, select, audio")) return true;
-      if (t.closest(".actions, .text-toolbar, .md-toolbar")) return true;
+      if (t.closest(".actions, .text-toolbar, .view-tabs")) return true;
       if (t.tagName === "VIDEO") {
         var r = t.getBoundingClientRect();
         if (y > r.bottom - 64) return true; // 底部控制条（进度条拖动）区域
@@ -552,7 +638,8 @@
   bindMarkdown();
   bindText();
   bindPdfJs();
-  bindCopyPath();
+  bindMoreMenu();
+  bindTabs();
   bindMediaErrors();
   bindSwipe();
 })();
