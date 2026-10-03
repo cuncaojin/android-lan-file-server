@@ -25,6 +25,12 @@
       </div>
       <div class="actions">
         <button type="button" class="btn icon" id="moreBtn" aria-haspopup="menu" aria-expanded="false" title="更多操作（长按或双击文件名也可打开）">⋮</button>
+        <div class="more-menu" id="moreMenu" role="menu" hidden>
+          <button type="button" class="mi" id="miCopyPath" role="menuitem">复制完整路径</button>
+          <button type="button" class="mi" id="miCopyName" role="menuitem">复制文件名</button>
+          <a class="mi" id="miDownload" role="menuitem" href="{{ meta.download_url }}" download>下载</a>
+          <a class="mi" id="miRaw" role="menuitem" href="{{ meta.raw_url }}" target="_blank" rel="noopener">原始文件（新窗口打开）</a>
+        </div>
       </div>
     </div>
     {% if meta.kind == "text" %}
@@ -49,12 +55,6 @@
       </div>
     </div>
     {% endif %}
-    <div class="more-menu" id="moreMenu" role="menu" hidden>
-      <button type="button" class="mi" id="miCopyPath" role="menuitem">复制完整路径</button>
-      <button type="button" class="mi" id="miCopyName" role="menuitem">复制文件名</button>
-      <a class="mi" id="miDownload" role="menuitem" href="{{ meta.download_url }}" download>下载</a>
-      <a class="mi" id="miRaw" role="menuitem" href="{{ meta.raw_url }}" target="_blank" rel="noopener">原始文件（新窗口打开）</a>
-    </div>
   </header>
 
   <main class="preview-main" id="previewMain">

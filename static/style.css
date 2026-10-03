@@ -115,6 +115,8 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  /* 下拉菜单相对按钮组定位：右缘与 ⋮ 按钮对齐 */
+  position: relative;
 }
 .actions.wrap { flex-wrap: wrap; justify-content: flex-end; }
 
@@ -153,11 +155,11 @@ a:hover { text-decoration: underline; }
   line-height: 1;
 }
 
-/* 顶栏 ⋮ 下拉菜单（列表页与预览页共用，相对 sticky 顶栏定位） */
+/* 顶栏 ⋮ 下拉菜单（列表页与预览页共用，相对 .actions 按钮组定位、正下方展开） */
 .more-menu {
   position: absolute;
   top: calc(100% + 2px);
-  right: 8px;
+  right: 0;
   z-index: 30;
   min-width: 178px;
   display: flex;
