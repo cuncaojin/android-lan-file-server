@@ -138,9 +138,60 @@
   function setHistory(path) {
     var url = browseUrl(path);
     if (location.pathname + location.search !== url) {
-      history.pushState({ path: path }, "", url);
+      // 浮层打开时压过的是浮层记录：导航直接复用它，避免历史栈多出空层
+      if (history.state && history.state.alfsOverlay) {
+        history.replaceState({ path: path }, "", url);
+      } else {
+        history.pushState({ path: path }, "", url);
+      }
     }
   }
+
+  // ── 返回键优先关闭浮层（⋮ 菜单 / 关于弹窗 / 目录树面板） ──
+  // 打开浮层时压入一条记录；手机返回键先收起浮层而不是离开页面；
+  // 点外/点选项/关闭按钮主动收起时回退该记录，保持历史栈干净。
+  var activeOverlay = null; // {close: fn}
+
+  function overlayOpen(closeFn) {
+    if (activeOverlay) overlayDismiss();
+    activeOverlay = closeFn;
+    try {
+      if (history.state && history.state.alfsOverlay) {
+        history.replaceState({ alfsOverlay: 1 }, "");
+      } else {
+        history.pushState({ alfsOverlay: 1 }, "");
+      }
+    } catch (e) {}
+  }
+
+  // 菜单项跳到另一浮层（如「关于」）：复用同一条记录，避免回退/压栈竞态
+  function overlaySwap(closeFn) {
+    activeOverlay = closeFn;
+    try {
+      history.replaceState({ alfsOverlay: 1 }, "");
+    } catch (e) {}
+  }
+
+  function overlayDismiss() {
+    if (!activeOverlay) return;
+    var fn = activeOverlay;
+    activeOverlay = null;
+    fn();
+    try {
+      if (history.state && history.state.alfsOverlay) history.back();
+    } catch (e) {}
+  }
+
+  window.addEventListener("popstate", function (e) {
+    // 浮层记录：返回键已把它退掉，这里只负责收起界面（不参与目录导航）
+    if (e.state && e.state.alfsOverlay) {
+      if (activeOverlay) {
+        var fn = activeOverlay;
+        activeOverlay = null;
+        fn();
+      }
+    }
+  });
 
   async function fetchLs(path) {
     var url =
@@ -222,6 +273,15 @@
       .replace(/"/g, "&quot;");
   }
 
+  // 列表与目录树共用的排序比较器（列表的"目录置顶"由调用方先判）
+  // 目录树子目录也用它，保证与右侧列表顺序始终一致
+  function compareEntries(a, b) {
+    var r = 0;
+    if (state.sort.key === "time") r = (a.mtime || 0) - (b.mtime || 0);
+    if (r === 0) r = String(a.name).localeCompare(String(b.name), "zh");
+    return state.sort.dir === "desc" ? -r : r;
+  }
+
   function renderTable(data) {
     var rows = [];
     var items = []
@@ -233,11 +293,7 @@
 
     items.sort(function (a, b) {
       if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
-      var r = 0;
-      if (state.sort.key === "time") r = (a.mtime || 0) - (b.mtime || 0);
-      if (r === 0)
-        r = String(a.name).localeCompare(String(b.name), "zh");
-      return state.sort.dir === "desc" ? -r : r;
+      return compareEntries(a, b);
     });
 
     if (!items.length) {
@@ -317,11 +373,13 @@
     }
 
     // Show children of current directory as tree
+    // 与列表同一排序，避免目录树和右侧列表顺序不一致
     var children = []
       .concat(data.dirs || [])
       .filter(function (d) {
         return d.is_dir;
       })
+      .sort(compareEntries)
       .slice(0, 200);
     if (children.length) {
       html.push('<div class="tree-children">');
@@ -434,6 +492,12 @@
   els.tree.addEventListener("click", function (e) {
     var btn = e.target.closest("button[data-path]");
     if (!btn) return;
+    // 收起面板但不动 history：load 的 setHistory 会复用这条浮层记录
+    if (activeOverlay) {
+      var closeFn = activeOverlay;
+      activeOverlay = null;
+      closeFn();
+    }
     load(btn.getAttribute("data-path") || "");
     els.sidePanel.classList.remove("open");
   });
@@ -443,9 +507,14 @@
     toast("已刷新");
   });
   els.openSideBtn.addEventListener("click", function () {
+    if (els.sidePanel.classList.contains("open")) return;
     els.sidePanel.classList.add("open");
+    overlayOpen(function () {
+      els.sidePanel.classList.remove("open");
+    });
   });
   els.closeSide.addEventListener("click", function () {
+    overlayDismiss();
     els.sidePanel.classList.remove("open");
   });
   if (els.hiddenToggle) {
@@ -501,15 +570,17 @@
       var opening = els.moreMenu.hidden;
       els.moreMenu.hidden = !opening;
       els.moreBtn.setAttribute("aria-expanded", opening ? "true" : "false");
+      if (opening) overlayOpen(closeMenu);
+      else overlayDismiss();
     });
     document.addEventListener("click", function (e) {
       if (els.moreMenu.hidden) return;
       if (!e.target.closest) return;
       if (e.target.closest("#moreMenu") || e.target.closest("#moreBtn")) return;
-      closeMenu();
+      overlayDismiss();
     });
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") closeMenu();
+      if (e.key === "Escape") overlayDismiss();
     });
   }
 
@@ -532,14 +603,14 @@
       } catch (err) {}
       syncSortUI();
       if (state.data) renderTable(state.data);
-      closeMenu();
+      overlayDismiss();
       toast("已按" + SORT_LABELS[sortKey()]);
     });
   }
 
   if (els.miCopyPath) {
     els.miCopyPath.addEventListener("click", function () {
-      closeMenu();
+      overlayDismiss();
       copyText(currentAbs()).then(
         function () {
           toast("已复制完整路径");
@@ -552,7 +623,7 @@
   }
   if (els.miCopyName) {
     els.miCopyName.addEventListener("click", function () {
-      closeMenu();
+      overlayDismiss();
       copyText(currentName()).then(
         function () {
           toast("已复制文件名");
@@ -565,25 +636,28 @@
   }
 
   if (els.aboutBtn && els.aboutModal) {
+    var closeAbout = function () {
+      els.aboutModal.hidden = true;
+    };
     els.aboutBtn.addEventListener("click", function () {
-      closeMenu();
+      closeMenu(); // 菜单 UI 收起，history 记录由 overlaySwap 复用给关于弹窗
       els.aboutModal.hidden = false;
+      overlaySwap(closeAbout);
     });
     if (els.aboutClose) {
-      els.aboutClose.addEventListener("click", function () {
-        els.aboutModal.hidden = true;
-      });
+      els.aboutClose.addEventListener("click", overlayDismiss);
     }
     // 点遮罩任意处立即跳过
     els.aboutModal.addEventListener("click", function (e) {
-      if (e.target === els.aboutModal) els.aboutModal.hidden = true;
+      if (e.target === els.aboutModal) overlayDismiss();
     });
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") els.aboutModal.hidden = true;
+      if (e.key === "Escape") overlayDismiss();
     });
   }
 
   window.addEventListener("popstate", function (e) {
+    if (e.state && e.state.alfsOverlay) return; // 浮层记录不参与目录导航
     var path = (e.state && e.state.path) || "";
     load(path, { push: false });
   });

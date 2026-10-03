@@ -50,7 +50,8 @@ A **LAN file server** running on an **Android phone (Termux Ubuntu subsystem)**:
 - Filenames **wrap in full** (no ellipsis truncation); **single-click anywhere on a row to enter** the directory or open the preview page (the whole row is clickable) — all file actions live in the preview page's `⋮` top-bar menu
 - The toolbar shows an **N entries** count for the current directory on the left (flagged when truncated), with the directory tree and name filter on the right
 - List page `⋮` menu: **show hidden files (a global switch — applies to every directory and is remembered across sessions) / copy full path / copy file name / sort (name·time × asc·desc, remembered across sessions) / about** (with version and Gitee + GitHub repo links; tap the backdrop to dismiss instantly)
-- Default sort is name ascending with directories always first; the same order drives two-finger swipe navigation on the preview page
+- Default sort is name ascending with directories always first; **the directory tree's subfolders use the same sort** so its order always matches the list; the same order also drives two-finger swipe navigation on the preview page
+- **The back key closes overlays first**: while the ⋮ menu, About dialog, or the directory-tree panel is open, pressing back collapses the overlay instead of leaving the page; dismissing by tapping an option or outside leaves no stray history entries
 - Mobile card layout in two rows: the name takes the full first row, `size · time` on the second
 - Returning from a preview to the list **auto-focuses the file you were just viewing**
 - Very large directories are truncated (about 5000 entries max by default)

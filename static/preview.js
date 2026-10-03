@@ -198,6 +198,39 @@
     });
   }
 
+  // ── 返回键优先关闭浮层：打开 ⋮ 菜单时压入一条记录，手机返回键先收菜单 ──
+  var activeOverlay = null;
+
+  function overlayOpen(closeFn) {
+    if (activeOverlay) overlayDismiss();
+    activeOverlay = closeFn;
+    try {
+      if (history.state && history.state.alfsOverlay) {
+        history.replaceState({ alfsOverlay: 1 }, "");
+      } else {
+        history.pushState({ alfsOverlay: 1 }, "");
+      }
+    } catch (e) {}
+  }
+
+  function overlayDismiss() {
+    if (!activeOverlay) return;
+    var fn = activeOverlay;
+    activeOverlay = null;
+    fn();
+    try {
+      if (history.state && history.state.alfsOverlay) history.back();
+    } catch (e) {}
+  }
+
+  window.addEventListener("popstate", function (e) {
+    if (!(e.state && e.state.alfsOverlay)) return;
+    if (!activeOverlay) return;
+    var fn = activeOverlay;
+    activeOverlay = null;
+    fn();
+  });
+
   // 顶栏 ⋮ 菜单：复制完整路径 / 复制文件名 / 下载 / 原始文件；长按或双击文件名也可打开
   function bindMoreMenu() {
     var btn = document.getElementById("moreBtn");
@@ -208,6 +241,7 @@
     function open() {
       menu.hidden = false;
       btn.setAttribute("aria-expanded", "true");
+      overlayOpen(close);
     }
     function close() {
       menu.hidden = true;
@@ -217,16 +251,16 @@
     btn.addEventListener("click", function (e) {
       e.stopPropagation();
       if (menu.hidden) open();
-      else close();
+      else overlayDismiss();
     });
     document.addEventListener("click", function (e) {
       if (menu.hidden) return;
       if (!e.target.closest) return;
       if (e.target.closest("#moreMenu") || e.target.closest("#moreBtn")) return;
-      close();
+      overlayDismiss();
     });
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape") overlayDismiss();
     });
 
     if (title) {
@@ -253,7 +287,7 @@
     var copyPath = document.getElementById("miCopyPath");
     if (copyPath && meta.full_path) {
       copyPath.addEventListener("click", function () {
-        close();
+        overlayDismiss();
         copyText(meta.full_path).then(
           function () {
             showToast("完整路径已复制", 1500);
@@ -267,7 +301,7 @@
     var copyName = document.getElementById("miCopyName");
     if (copyName && meta.name) {
       copyName.addEventListener("click", function () {
-        close();
+        overlayDismiss();
         copyText(meta.name).then(
           function () {
             showToast("文件名已复制", 1500);
@@ -280,7 +314,7 @@
     }
     ["miDownload", "miRaw"].forEach(function (id) {
       var el = document.getElementById(id);
-      if (el) el.addEventListener("click", close);
+      if (el) el.addEventListener("click", overlayDismiss);
     });
   }
 

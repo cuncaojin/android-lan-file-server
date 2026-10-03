@@ -84,3 +84,9 @@
 /sdcard/cuncaojin/work/gitee/android-lan-file-server/templates/index.html
 /sdcard/cuncaojin/work/gitee/android-lan-file-server/static/style.css
 /sdcard/cuncaojin/work/gitee/android-lan-file-server/.modify.txt
+2026-10-03
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/static/app.js
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/static/preview.js
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/README.md
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/README.en.md
+/sdcard/cuncaojin/work/gitee/android-lan-file-server/.modify.txt
