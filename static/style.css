@@ -590,4 +590,6 @@ a:hover { text-decoration: underline; }
     align-self: center;
   }
   .file-table td:nth-child(2)::after { content: " ·"; }
+  /* 目录行大小为空：不画分隔点，避免日期时间前出现孤立的"·" */
+  .file-table td:nth-child(2):empty::after { content: none; }
 }

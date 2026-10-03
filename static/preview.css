@@ -298,19 +298,27 @@
 .fallback p { margin: 0; }
 
 /* 顶栏：返回 chevron 图标按钮 + ⋮ 图标按钮及下拉菜单（菜单相对 sticky 顶栏定位） */
+/* 返回键：无边框无背景、仅保留 chevron；保留 34px 点击区与正边距防误触/截断 */
 .preview-page .back {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 34px;
   height: 34px;
-  margin-left: -4px;
+  margin-left: 0;
   padding: 0;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 10px;
-  background: var(--bg-soft);
+  background: transparent;
 }
-.preview-page .back:active { background: var(--bg); }
+.preview-page .back:active { background: var(--bg-soft); }
+/* 更多按钮：无边框无背景、仅保留三个点；padding 保留作点击区 */
+.preview-page .topbar .btn.icon {
+  border: 0;
+  background: transparent;
+  padding: 6px 10px;
+}
+.preview-page .topbar .btn.icon:active { background: var(--bg-soft); }
 
 /* 文件名：提供长按/双击手势，禁用文本选择避免误触 */
 .preview-page .topbar .title {
