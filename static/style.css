@@ -147,12 +147,22 @@ a:hover { text-decoration: underline; }
 }
 .crumbs a {
   color: var(--text-dim);
-  max-width: 42vw;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.crumbs strong { color: var(--text); }
+/* 分享根之外不可访问的路径段 */
+.crumbs .dead {
+  color: var(--text-dim);
+  opacity: 0.55;
   white-space: nowrap;
 }
 .crumbs .sep { opacity: 0.5; }
+.crumbs .root-sep { opacity: 0.5; }
+
+/* 触摸设备（手机/平板）：刷新按钮由下拉刷新替代，不显示 */
+@media (pointer: coarse) {
+  #refreshBtn { display: none; }
+}
 
 .layout {
   display: grid;

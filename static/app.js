@@ -129,21 +129,53 @@
     return res.json();
   }
 
-  function renderCrumbs(data) {
-    var html = [];
-    (data.crumbs || []).forEach(function (c, idx, arr) {
-      if (idx > 0) html.push('<span class="sep">/</span>');
-      if (idx === arr.length - 1) {
-        html.push("<strong>" + escapeHtml(c.name) + "</strong>");
-      } else {
+  // 单行完整绝对路径：任意中间段可点击跳转；
+  // 分享根之外的段按 allow_outside 决定可点（否则置灰不可跳）
+  function renderPathRow(data) {
+    var abs = data.path_abs || "";
+    if (!abs) {
+      var root = String(cfg.rootPath || "").replace(/\/+$/, "");
+      var sp = state.path || "";
+      abs = sp.charAt(0) === "@" ? sp.slice(1) : root + (sp ? "/" + sp : "");
+    }
+    var rootNorm = String(cfg.rootPath || "").replace(/\/+$/, "");
+    var parts = abs.split("/").filter(Boolean);
+    if (!parts.length) {
+      els.crumbs.innerHTML = '<span class="sep">/</span>';
+      return;
+    }
+    var html = ['<span class="sep root-sep">/</span>'];
+    var acc = "";
+    parts.forEach(function (seg, i) {
+      acc += "/" + seg;
+      var last = i === parts.length - 1;
+      if (last) {
+        html.push('<strong title="' + escapeHtml(abs) + '">' + escapeHtml(seg) + "</strong>");
+        return;
+      }
+      var inRoot =
+        rootNorm &&
+        (acc === rootNorm || acc.indexOf(rootNorm + "/") === 0);
+      if (inRoot) {
+        var rel = acc === rootNorm ? "" : acc.slice(rootNorm.length + 1);
         html.push(
-          '<a href="' + browseUrl(c.path) + '" data-path="' + escapeHtml(c.path) + '">' +
-            escapeHtml(c.name) +
+          '<a href="' + browseUrl(rel) + '" data-path="' + escapeHtml(rel) + '">' +
+            escapeHtml(seg) +
             "</a>"
         );
+      } else if (cfg.allowOutside) {
+        var outside = "@" + acc;
+        html.push(
+          '<a href="' + browseUrl(outside) + '" data-path="' + escapeHtml(outside) + '">' +
+            escapeHtml(seg) +
+            "</a>"
+        );
+      } else {
+        html.push('<span class="dead" title="超出分享根目录，不可访问">' + escapeHtml(seg) + "</span>");
       }
+      html.push('<span class="sep">/</span>');
     });
-    els.crumbs.innerHTML = html.join(" ");
+    els.crumbs.innerHTML = html.join("");
   }
 
   function escapeHtml(s) {
@@ -305,13 +337,16 @@
   }
 
   function renderHeader(data) {
-    els.curTitle.textContent = data.path || "/sdcard";
+    // 面板标题只显示目录名（完整路径已在顶栏路径行展示）
+    var parts = String(data.path || "").split("/").filter(Boolean);
+    els.curTitle.textContent = parts.length
+      ? parts[parts.length - 1]
+      : cfg.rootName || "/";
     var bits = [];
     bits.push(data.count + " 项");
     if (data.truncated) bits.push("（数量过大已截断）");
-    bits.push(data.path_abs);
     els.curMeta.textContent = bits.join(" · ");
-    els.upBtn.disabled = !data.path;
+    els.upBtn.disabled = !state.path;
   }
 
   // 预览页退出时写入 sessionStorage；此处消费一次，把焦点还给刚看过的文件
@@ -351,7 +386,7 @@
     try {
       var data = await fetchLs(state.path);
       state.data = data;
-      renderCrumbs(data);
+      renderPathRow(data);
       renderTree(data);
       renderHeader(data);
       renderTable(data);
@@ -360,7 +395,7 @@
         els.searchInput.value = "";
         state.query = "";
       }
-      document.title = (state.path || "手机存储") + " · 文件浏览";
+      document.title = (state.path || "lan file server") + " · 文件浏览";
     } catch (e) {
       els.fileBody.innerHTML =
         '<tr><td colspan="4" class="muted">加载失败：' +
@@ -445,10 +480,56 @@
     load(path, { push: false });
   });
 
+  // 触摸设备（手机/平板）用下拉刷新替代刷新按钮；桌面保留按钮
+  function bindPullRefresh() {
+    var coarse = false;
+    try {
+      coarse =
+        (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ||
+        (navigator.maxTouchPoints || 0) > 0;
+    } catch (e) {}
+    if (!coarse) return;
+    var startY = 0;
+    var startX = 0;
+    var armed = false;
+    document.addEventListener(
+      "touchstart",
+      function (e) {
+        if (e.touches.length !== 1) {
+          armed = false;
+          return;
+        }
+        var y = window.scrollY || document.documentElement.scrollTop || 0;
+        armed = y <= 0;
+        startY = e.touches[0].clientY;
+        startX = e.touches[0].clientX;
+      },
+      { passive: true }
+    );
+    document.addEventListener(
+      "touchend",
+      function (e) {
+        if (!armed) return;
+        armed = false;
+        if (!e.changedTouches || !e.changedTouches.length) return;
+        var y = window.scrollY || document.documentElement.scrollTop || 0;
+        if (y > 0) return;
+        var dy = e.changedTouches[0].clientY - startY;
+        var dx = e.changedTouches[0].clientX - startX;
+        if (dy > 80 && Math.abs(dx) < 50) {
+          load(state.path, { push: false });
+          toast("已刷新");
+        }
+      },
+      { passive: true }
+    );
+  }
+
   // 浏览器返回若命中 bfcache（不重新加载），列表原样恢复时补一次焦点
   window.addEventListener("pageshow", function (e) {
     if (e.persisted) focusLastPreviewed();
   });
 
+  bindPullRefresh();
   load(state.path, { push: false, focusSearch: true });
 })();

@@ -4,16 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="color-scheme" content="light dark" />
-  <title>手机存储 · 文件浏览</title>
+  <title>lan file server · 文件浏览</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
-      <span class="logo" aria-hidden="true">📱</span>
       <div>
-        <div class="title">手机存储</div>
-        <div class="subtitle">{{ root_path }}</div>
+        <div class="title">lan file server</div>
       </div>
     </div>
     <div class="actions">
@@ -21,11 +19,11 @@
         <input type="checkbox" id="hiddenToggle" />
         <span>隐藏文件</span>
       </label>
-      <button type="button" id="refreshBtn" class="btn">刷新</button>
+      <button type="button" id="refreshBtn" class="btn" title="刷新当前目录">刷新</button>
     </div>
   </header>
 
-  <nav class="crumbs" id="crumbs" aria-label="路径"></nav>
+  <nav class="crumbs" id="crumbs" aria-label="完整路径"></nav>
 
   <main class="layout">
     <aside class="panel side" id="sidePanel">
@@ -74,6 +72,7 @@
       rootName: {{ root_name|tojson }},
       rootPath: {{ root_path|tojson }},
       soffice: {{ soffice|tojson }},
+      allowOutside: {{ allow_outside|tojson }},
       startPath: {{ start_path|tojson }}
     };
   </script>

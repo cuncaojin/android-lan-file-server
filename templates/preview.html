@@ -12,7 +12,9 @@
   <header class="topbar sticky" id="topbar">
     <div class="nav-row">
       <div class="brand compact">
-        <a class="back" href="/" id="backHome">返回</a>
+        <a class="back" href="/" id="backHome" aria-label="返回" title="返回">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
         <div>
           <div class="title truncate" title="{{ meta.name }}">{{ meta.name }}</div>
           <div class="subtitle">
@@ -28,7 +30,6 @@
     {% if meta.kind == "text" %}
     <div class="modebar">
       <div class="mb-left">
-        <button type="button" class="btn mode on" data-view="preview">预览</button>
         {% if meta.content and meta.content|length >= 2000000 %}<span class="hint mb-hint">已截断，仅显示前 2MB</span>{% endif %}
         <div class="text-ops">
           <button type="button" class="btn toggle" id="btnFormat" hidden>格式化</button>
@@ -39,7 +40,6 @@
           <button type="button" class="btn" id="btnZoomIn" title="放大字号">A+</button>
         </div>
       </div>
-      <button type="button" class="btn raw-btn" data-view="raw">原始文件</button>
     </div>
     {% elif meta.kind == "markdown" %}
     <div class="modebar">
@@ -47,15 +47,12 @@
         <button type="button" class="btn mode on" data-view="render">渲染</button>
         <button type="button" class="btn mode" data-view="source">源码</button>
       </div>
-      <button type="button" class="btn raw-btn" data-view="raw">原始文件</button>
     </div>
     {% endif %}
     <div class="more-menu" id="moreMenu" role="menu" hidden>
       <button type="button" class="mi" id="miCopy" role="menuitem">复制路径</button>
       <a class="mi" id="miDownload" role="menuitem" href="{{ meta.download_url }}" download>下载</a>
-      {% if meta.kind not in ["text", "markdown"] %}
       <a class="mi" id="miRaw" role="menuitem" href="{{ meta.raw_url }}" target="_blank" rel="noopener">原始文件（新窗口打开）</a>
-      {% endif %}
     </div>
   </header>
 
@@ -111,12 +108,10 @@
     {% elif meta.kind == "markdown" %}
       <article class="markdown-body" id="mdBody"></article>
       <pre class="md-source" id="mdSource" hidden></pre>
-      <iframe class="raw-frame" id="rawFrame" data-src="{{ meta.raw_url }}" sandbox="" title="原始文件" hidden></iframe>
       <script type="application/json" id="mdPayload">{{ meta.content|tojson }}</script>
 
     {% elif meta.kind == "text" %}
       <pre class="text-view" id="textView"></pre>
-      <iframe class="raw-frame" id="rawFrame" data-src="{{ meta.raw_url }}" sandbox="" title="原始文件" hidden></iframe>
       <script type="application/json" id="textPayload">{{ meta.content|tojson }}</script>
 
     {% elif meta.kind == "audio" %}

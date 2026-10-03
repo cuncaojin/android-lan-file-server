@@ -130,18 +130,8 @@
 .modebar .mb-hint {
   font-size: 12px;
 }
-/* 右侧原始文件按钮：列表页可预览按钮同款绿色边框，激活时绿色填充 */
-.modebar .raw-btn {
-  flex: none;
-  border-color: var(--accent-2);
-  color: var(--accent-2);
-}
-.modebar .raw-btn.on {
-  background: var(--accent-2);
-  border-color: transparent;
-  color: #fff;
-}
-/* 左侧模式按钮（预览/渲染/源码）激活态 */
+/* 原始文件统一走顶栏 ⋮ 菜单新窗口打开，不再有页内 raw 视图 */
+/* 左侧模式按钮（渲染/源码）激活态 */
 .modebar .mode.on {
   background: var(--accent);
   border-color: transparent;
@@ -307,19 +297,20 @@
 }
 .fallback p { margin: 0; }
 
-/* 原始文件视图（沙箱 iframe 内嵌展示） */
-.raw-frame {
-  display: block;
-  width: 100%;
-  height: calc(100vh - 116px);
-  min-height: 300px;
+/* 顶栏：返回 chevron 图标按钮 + ⋮ 图标按钮及下拉菜单（菜单相对 sticky 顶栏定位） */
+.preview-page .back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-left: -4px;
+  padding: 0;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--bg-elev);
+  border-radius: 10px;
+  background: var(--bg-soft);
 }
-.raw-frame[hidden] { display: none; }
-
-/* 顶栏 ⋮ 图标按钮 + 下拉菜单（菜单相对 sticky 顶栏定位） */
+.preview-page .back:active { background: var(--bg); }
 .btn.icon {
   padding: 6px 12px;
   font-size: 18px;
@@ -393,7 +384,6 @@
   .preview-page .markdown-body,
   .preview-page .md-source,
   .preview-page .text-view,
-  .preview-page .raw-frame,
   .preview-page .pdf-shell,
   .preview-page .ppt-shell,
   .preview-page .ppt-text,

@@ -270,42 +270,24 @@
     });
   }
 
-  // 视图模式栏：左侧预览相关按钮（预览/渲染/源码），右侧原始文件（绿色按钮）
+  // 视图模式栏：左侧预览相关按钮（如 Markdown 渲染/源码）；原始文件统一走 ⋮ 菜单
   function bindModebar() {
     var modebar = document.querySelector(".modebar");
-    if (!modebar) return;
-    var rawFrame = document.getElementById("rawFrame");
-    var textView = document.getElementById("textView");
+    if (!modebar || !modebar.querySelector("[data-view]")) return;
     var mdBody = document.getElementById("mdBody");
     var mdSource = document.getElementById("mdSource");
-    var rawLoaded = false;
 
     function activate(view) {
       var btns = modebar.querySelectorAll("[data-view]");
       for (var i = 0; i < btns.length; i++) {
-        var v = btns[i].getAttribute("data-view");
         btns[i].classList.toggle(
           "on",
-          btns[i].classList.contains("raw-btn")
-            ? v === "raw" && view === "raw"
-            : v === view
+          btns[i].getAttribute("data-view") === view
         );
       }
-      var isRaw = view === "raw";
-      // 预览专属控件（工具组/截断提示）在原始文件视图下隐藏
-      var ops = modebar.querySelectorAll(".text-ops, .mb-hint");
-      for (var j = 0; j < ops.length; j++) ops[j].hidden = isRaw;
-      if (rawFrame) {
-        rawFrame.hidden = !isRaw;
-        if (isRaw && !rawLoaded) {
-          rawFrame.src = rawFrame.getAttribute("data-src") || "";
-          rawLoaded = true;
-        }
-      }
-      if (textView) textView.hidden = isRaw;
       if (mdBody) {
-        mdBody.hidden = isRaw || view === "source";
-        if (mdSource) mdSource.hidden = isRaw || view === "render";
+        mdBody.hidden = view === "source";
+        if (mdSource) mdSource.hidden = view === "render";
       }
     }
 

@@ -43,7 +43,9 @@ A **LAN file server** running on an **Android phone (Termux Ubuntu subsystem)**:
 ## 1. Features
 
 ### 1.1 File browsing
-- Directory tree / breadcrumbs / parent directory
+- Directory tree / single-line full path / parent directory
+- The top bar shows **one full absolute path line**; tap any segment in the middle to jump straight to that directory. Segments outside the shared root are tappable or greyed out according to `ALLOW_OUTSIDE_ROOT`
+- On phones/tablets, **pull down to refresh** the current directory (the refresh button is hidden on touch devices and kept for desktop browsers)
 - Chinese and space-containing paths
 - Filenames **wrap in full** (no ellipsis truncation); previewability is expressed by the button on the right (a "Preview" button appears only when preview is available)
 - Mobile card layout in two rows: the name takes the full first row, `size · time` and action buttons on the second
@@ -72,7 +74,7 @@ Every file type also offers **Preview** / **Download** / **Raw link**.
 
 Previewable files in the same directory can be switched by **two-finger horizontal swipe** on the preview page: swipe left for the next file, right for the previous one, stopping at the first/last file (**no wrap-around**; swiping further shows an "already at the first/last file" toast). A single-finger horizontal swipe never switches files — it shows a toast prompting you to use two fingers instead (preventing accidental switches while panning text or moving zoomed content). The top bar behaves like an Android toolbar: **it hides on scroll-down and reappears on scroll-up**.
 
-The `⋮` menu in the preview top bar offers **copy path / download / raw file**; **long-pressing or double-clicking the file name** opens the same menu. The mode bar is split left/right: the **left side** holds preview-related controls (format/wrap/line numbers/font size for plain text, render/source for Markdown; buttons wrap onto multiple lines when space runs out), while the **green-bordered button on the right** is "Raw file", viewed in place — the two viewing modes are instantly distinguishable.
+The `⋮` menu in the preview top bar offers **copy path / download / raw file (opens in a new window)** — every file type opens its raw file from this one place; **long-pressing or double-clicking the file name** opens the same menu. The mode bar under the top bar holds the preview-related buttons (format/wrap/line numbers/font size for plain text, render/source for Markdown; buttons wrap onto multiple lines when space runs out).
 
 ### 1.3 Service characteristics
 - Listens on `0.0.0.0` by default, **reachable from both the phone and the LAN**; changing it back to `127.0.0.1` restricts access to the phone itself
