@@ -402,10 +402,7 @@
   }
 
   // Events
-  els.fileBody.addEventListener("click", function (e) {
-    var a = e.target.closest("a[data-path]");
-    if (!a) return;
-    e.preventDefault();
+  function openEntry(a) {
     var path = a.getAttribute("data-path");
     if (a.getAttribute("data-dir") === "1") {
       load(path);
@@ -413,6 +410,17 @@
       var kind = a.getAttribute("data-kind") || "";
       location.href = previewUrl(path, kind, false);
     }
+  }
+
+  // 单击仅阻止 <a> 默认跳转，双击条目才打开（目录进文件夹、文件进预览）
+  els.fileBody.addEventListener("click", function (e) {
+    if (e.target.closest("a[data-path]")) e.preventDefault();
+  });
+  els.fileBody.addEventListener("dblclick", function (e) {
+    var a = e.target.closest("a[data-path]");
+    if (!a) return;
+    e.preventDefault();
+    openEntry(a);
   });
 
   els.pathLine.addEventListener("click", function (e) {

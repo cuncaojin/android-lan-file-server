@@ -47,7 +47,7 @@ A **LAN file server** running on an **Android phone (Termux Ubuntu subsystem)**:
 - The top bar shows the **current directory name** on the first line and the **parent directory's full path** on the second (wraps when long). Tap any segment to jump straight to that directory; segments outside the shared root are tappable or greyed out according to `ALLOW_OUTSIDE_ROOT`
 - On phones/tablets, **pull down to refresh** the current directory (the refresh button is hidden on touch devices and kept for desktop browsers)
 - Chinese and space-containing paths
-- Filenames **wrap in full** (no ellipsis truncation); **click the name to enter** the directory or open the preview page — all file actions live in the preview page's `⋮` top-bar menu
+- Filenames **wrap in full** (no ellipsis truncation); **double-click the name to enter** the directory or open the preview page (a single click does not navigate) — all file actions live in the preview page's `⋮` top-bar menu
 - The toolbar shows an **N entries** count for the current directory on the left (flagged when truncated), with the directory tree and name filter on the right
 - List page `⋮` menu: **show hidden files (a global switch — applies to every directory and is remembered across sessions) / copy full path / copy file name / sort (name·time × asc·desc, remembered across sessions) / about** (with version and Gitee + GitHub repo links; tap the backdrop to dismiss instantly)
 - Default sort is name ascending with directories always first; the same order drives two-finger swipe navigation on the preview page
