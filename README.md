@@ -30,6 +30,20 @@
 
 ---
 
+## 界面截图
+
+真机浏览器访问 `127.0.0.1:9523` 的实际效果（深色主题）：
+
+| 文件列表 · ⋮ 菜单 | Markdown 在线预览 | Word/Excel 转 PDF 预览 |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/list-menu.jpg" width="240" alt="文件列表与 ⋮ 菜单"> | <img src="docs/screenshots/preview-markdown.jpg" width="240" alt="Markdown 在线预览"> | <img src="docs/screenshots/preview-docx-pdf.jpg" width="240" alt="Word 转 PDF 预览"> |
+
+| JSON 代码查看 | 网页（HTML）在线预览 |
+| :---: | :---: |
+| <img src="docs/screenshots/preview-json.jpg" width="240" alt="JSON 代码查看"> | <img src="docs/screenshots/preview-html.jpg" width="240" alt="HTML 在线预览"> |
+
+---
+
 ## 使用场景
 
 - **局域网即分享**：朋友/同事与你连同一个 Wi-Fi，浏览器打开你手机的地址就能浏览你放开的目录——不用微信传文件、不用网盘上传再下载

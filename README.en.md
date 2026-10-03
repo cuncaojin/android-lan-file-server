@@ -30,6 +30,20 @@ A **LAN file server** running on an **Android phone (Termux Ubuntu subsystem)**:
 
 ---
 
+## Screenshots
+
+Actual views on a phone browser visiting `127.0.0.1:9523` (dark theme):
+
+| File list · ⋮ menu | Markdown preview | Word/Excel → PDF preview |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/list-menu.jpg" width="240" alt="File list and menu"> | <img src="docs/screenshots/preview-markdown.jpg" width="240" alt="Markdown preview"> | <img src="docs/screenshots/preview-docx-pdf.jpg" width="240" alt="Word to PDF preview"> |
+
+| JSON code view | Web page (HTML) preview |
+| :---: | :---: |
+| <img src="docs/screenshots/preview-json.jpg" width="240" alt="JSON code view"> | <img src="docs/screenshots/preview-html.jpg" width="240" alt="HTML preview"> |
+
+---
+
 ## Use cases
 
 - **Sharing is just the LAN**: friends/colleagues on the same Wi-Fi open your phone's address in a browser and browse the directory you exposed — no WeChat file transfers, no cloud-drive upload/download round trip
