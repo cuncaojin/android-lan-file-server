@@ -412,11 +412,8 @@
     }
   }
 
-  // 单击仅阻止 <a> 默认跳转，双击条目才打开（目录进文件夹、文件进预览）
+  // 单击条目即打开（目录进文件夹、文件进预览）
   els.fileBody.addEventListener("click", function (e) {
-    if (e.target.closest("a[data-path]")) e.preventDefault();
-  });
-  els.fileBody.addEventListener("dblclick", function (e) {
     var a = e.target.closest("a[data-path]");
     if (!a) return;
     e.preventDefault();

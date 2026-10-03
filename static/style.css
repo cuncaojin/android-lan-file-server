@@ -489,7 +489,7 @@ a:hover { text-decoration: underline; }
   white-space: normal;
   overflow-wrap: anywhere;
   min-width: 0;
-  /* 双击打开时避免误选文件名 */
+  /* 避免点按时误选文件名 */
   user-select: none;
   -webkit-user-select: none;
 }
